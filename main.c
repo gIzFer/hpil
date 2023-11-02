@@ -8,25 +8,35 @@
 #include <string.h>
 
 
-//#define VERBOSE
+#define VERBOSE
 
 #define baudRate 115200
 #define UBRR0_value (F_CPU/(baudRate*8))-1
 
 #define LED PORTB4
 
-#define PULSES_ARRAY_SIZE 64
+#define PULSES_ARRAY_SIZE 55
 volatile uint8_t pulses[PULSES_ARRAY_SIZE];
 
-volatile uint8_t control = 0; // signal received, queue decoding
+volatile uint8_t firstBitInterrupt = 0; // signal received, queue decoding
 
-#define FINAL_DATA_SIZE 12
-uint8_t finalData[FINAL_DATA_SIZE];
+
+#define FRAME_CONTROL_BITS 4
+#define FRAME_DATA_BITS 8
+#define FRAME_SIZE (FRAME_CONTROL_BITS + FRAME_DATA_BITS)
+uint8_t control = 0;
+uint8_t data = 0;
+
+
+
+
+
+
 //starts by 1
 ISR(INT0_vect){
 	EIMSK &= 0b00;
 	PINB |= 0b00010000;
-	control = 1;
+	firstBitInterrupt = 1;
 	for (uint8_t i = 0; i < PULSES_ARRAY_SIZE; i++) {
 		pulses[i] = PIND;
 	}
@@ -38,7 +48,7 @@ ISR(INT0_vect){
 ISR(INT1_vect){
 	EIMSK &= 0b00;
 	PINB |= 0b00010000;
-	control = 2;
+	firstBitInterrupt = 2;
 	for (uint8_t i = 0; i < PULSES_ARRAY_SIZE; i++) {
 		pulses[i] = PIND;
 	}
@@ -66,7 +76,7 @@ int main(void) {
 
 	//set interrupt
 	EICRA |= 0b11; //INT0 on rising edge
-	EIMSK |= 1; //enable INT0
+	EIMSK |= 0b01; //enable INT0
 
 	EICRA |= 0b1100; //INT1 on rising edge
 	EIMSK |= 0b10; //enable INT1
@@ -83,23 +93,41 @@ int main(void) {
   DDRB |= (1 << LED); // set pin 13  as out
 
 	for(;;) {
-		//PINB |= (1 << LED);
-    //_delay_ms(1000);
-		//USART0SendByte('a');
-
-		//this is the signal compressed, removing duplicated data
-		#define SIGNAL_DATA_SIZE PULSES_ARRAY_SIZE
-		uint8_t signalData[SIGNAL_DATA_SIZE];
 
 
-		if(control != 0){
+		if(firstBitInterrupt != 0){
 			PINB |= 0b00010000;
 			cli();
-			if((pulses[0] & 0b00001100) != 0){ // message is not empty, must start by 1
 
-				//prepare iteration to compress signal
-				uint8_t signalData_currentNdx = 0;
-				memset(signalData, 0, SIGNAL_DATA_SIZE);
+			//check if empty to save time
+			uint8_t emptyCheck = 0;
+			for (size_t i = 0; i < 5; i++) {//unlikely any message starts with 5 zeroes ?
+				emptyCheck += pulses[i] & 0b00001100;
+			}
+
+
+			if(emptyCheck != 0){ // message is not empty, must start by 1
+				//USART0SendByte(firstBitInterrupt + 48);
+				//USART0SendByte('_');
+
+
+
+
+
+
+				//track where I am in the frame decoding progress, 1-12 (0-11)
+				uint8_t frameDecodingPos = 1;
+				//already have the first bit from which ISR triggered
+				control = (firstBitInterrupt & 0b10) << 2;
+				//control = 0;
+				data = 0;
+
+
+
+				uint8_t dataPair_[2];
+				uint8_t dataPair_ndx_ = 0;
+				uint8_t dataPair_val_prevPair = 0;
+
 
 				for(int i = 0; i < PULSES_ARRAY_SIZE; i++){
 					uint8_t pulse = pulses[i] & 0b00001100;
@@ -118,116 +146,98 @@ int main(void) {
 
 
 
-					if(signalData_currentNdx != 0 && signalData_currentNdx < SIGNAL_DATA_SIZE){
-						if(signalData[signalData_currentNdx - 1] != pulse){
-							signalData[signalData_currentNdx] = pulse;
-							signalData_currentNdx++;
+
+					//detailed printing
+					#ifdef VERBOSE
+					//char message[10];
+					//sprintf(message, "@%d@", pulse);
+					//usartPrintStr(message);
+					#endif
+
+
+					if(pulse == 1 || pulse == 0){//ignore idles
+						//first val and its not the same as the inmediately previous one, it needs a 3 between to equal ones to be valid
+						//abusing order of check so it doesnt evaluate pulses[i - 1] on the first run as that would crash
+						if(dataPair_ndx_ == 0 && pulse != dataPair_val_prevPair){
+							dataPair_[0] = pulse;
+							dataPair_ndx_++;
+						}else if(dataPair_ndx_ == 1 && dataPair_[0] != pulse){ //not repeated, for deduplication of oversampling
+							dataPair_val_prevPair = pulse;
+							dataPair_[1] = pulse;
+							dataPair_ndx_ = 0;
+
+
+							//here I must have a pair of 0 and 1
+							if(frameDecodingPos < FRAME_SIZE){
+								//get the value of the bit pair
+								uint8_t procesedBit = 0;
+								if(dataPair_[0] == 0 && dataPair_[1] == 1){
+									procesedBit = 1;
+								}else if(dataPair_[0] == 1 && dataPair_[1] == 0){
+									procesedBit = 0;
+								}else{//no?
+									control = 255;
+								}
+
+
+
+
+								//add it to the result
+								//frame decoding pos is in array, the constant is a total value, gotta -1 it
+								if(frameDecodingPos < (FRAME_CONTROL_BITS)){
+									control |= procesedBit << (FRAME_CONTROL_BITS - frameDecodingPos - 1);
+									frameDecodingPos++;
+								}else{//its data
+									data |= procesedBit << (FRAME_CONTROL_BITS + FRAME_DATA_BITS - frameDecodingPos - 1);
+									frameDecodingPos++;
+								}
+
+
+							}else{
+								control = 255;
+							}
+
+
 						}
-					}else if(signalData_currentNdx == 0){
-						signalData[signalData_currentNdx] = pulse;
-						signalData_currentNdx++;
+					}else{ //idle, so a new pulse can start with the same digit as the prev one
+						dataPair_val_prevPair = 3;
 					}
 
 
 
-
-
-
-					//detailed printing
-					#ifdef VERBOSE
-					char message[4];
-					sprintf(message, "%d", pulse);
-					usartPrintStr(message);
-					#endif
 
 
 
 
 				}//end of for
+
+
+
+
 				#ifdef VERBOSE
-				USART0SendByte('\r');
-				USART0SendByte('\n');
+				//USART0SendByte('\r');
+				//USART0SendByte('\n');
 				#endif
 
 
 
-				//print signalData
-				#ifdef VERBOSE
-				for (uint8_t i = 0; i < SIGNAL_DATA_SIZE; i++) {
-					char message[4];
-					sprintf(message, "%d", signalData[i]);
-					usartPrintStr(message);
-				}
-				USART0SendByte('\r');
-				USART0SendByte('\n');
-				#endif
-
-
-				//decode the deduplicated data
-				//the first bit is the trigger of the ISR
-				//#define FINAL_DATA_SIZE 12
-				//uint8_t finalData[FINAL_DATA_SIZE];
-				finalData[0] = control & 0b1;
-				uint8_t finalData_ndx = 1; //start on one, the first bit is set by the control var
-				uint8_t dataPair[2];
-				uint8_t dataPair_ndx = 0;
-
-				for (uint8_t i = 0; i < SIGNAL_DATA_SIZE; i++) {
-					if(signalData[i] == 1 || signalData[i] == 0){//ignore idles
-						if(dataPair_ndx == 0){//first val
-							dataPair[dataPair_ndx] = signalData[i];
-							dataPair_ndx++;
-						}else if(dataPair_ndx == 1){
-							dataPair[dataPair_ndx] = signalData[i];
-							dataPair_ndx = 0;
-
-							if(finalData_ndx < FINAL_DATA_SIZE + 1){
-								if(dataPair[0] == 0 && dataPair[1] == 1){
-									finalData[finalData_ndx] = 0;
-									finalData_ndx++;
-								}else if(dataPair[0] == 1 && dataPair[1] == 0){
-									finalData[finalData_ndx] = 1;
-									finalData_ndx++;
-								}else{//prob read a 3, idle between pulses for whatev reason, push back and keep trying
-									finalData[0] = finalData[1];
-								}
-							}else{
-								finalData[0] = 7; //put a 7 to let know theres an error
-								finalData[FINAL_DATA_SIZE - 1] = 7; //put a 7 to let know theres an error
-							}
-
-
-						}
-					}
-				}//end of decoding for()
 
 			}
-			control = 0;
+			firstBitInterrupt = 0;
 			EIMSK |= 0b11; //enable INT0 and INT1
 			sei();
 			PINB |= 0b00010000;
 
 
+		//char message_[32];
+		//sprintf(message_, "%d - %d\r\n", control, data);
+		//usartPrintStr(message_);
 
-		//print decoded data
-		if(finalData[2] == 0){
 
-			char message[4];
-			for (uint8_t i = 0; i < FINAL_DATA_SIZE; i++) {
-				if(i == 2 || i == 4){
-					USART0SendByte(' ');
-				}
-				USART0SendByte(finalData[i] + 48);
-				//sprintf(message, "%d", finalData[i]);
-				//usartPrintStr(message);
-			}
-			USART0SendByte('\r');
-			USART0SendByte('\n');
+		//USART0SendByte(control);
+		USART0SendByte(data);
 
-			USART0SendByte('\r');
-			USART0SendByte('\n');
-
-		}
+		//USART0SendByte('\n');
 
 
 
