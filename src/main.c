@@ -18,8 +18,10 @@
 #include "interrupts.h"
 #include "uart.h"
 #include "decoder.h"
+#include "talker.h"
 
 
+#define LED PORTB4 //used for debugging
 
 
 
@@ -27,12 +29,19 @@ int main(void) {
 	setupUart(F_CPU, BAUDRATE);
 
 	setupInterrupts();
-	//sendStr("hi!\n\r");
+	setupTalker();
+	sendStr("hi!\n\r");
 
+	DDRB |= (1 << LED); // set pin 13  as out
+
+
+	//PIND |= 0b00100000;
 
 	for(;;) {
-		decodeFrame();
-
+		talk(0b101,0b10101010);
+		//decodeFrame();
+		//_delay_us(1);
+		//PIND |= 0b00110000;
 
 	}
 }

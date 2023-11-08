@@ -11,7 +11,7 @@ uint8_t frameData;
 
 //starts by 1
 ISR(INT0_vect){
-	EIMSK &= 0b00;
+	EIMSK &= 0b00; //disable interrupts
 	PINB |= 0b00010000;
 	firstBitInterrupt = 1;
 	for (uint8_t i = 0; i < PULSES_ARRAY_SIZE; i++) {
@@ -23,7 +23,7 @@ ISR(INT0_vect){
 
 //starts by 0
 ISR(INT1_vect){
-	EIMSK &= 0b00;
+	EIMSK &= 0b00; //disable interrupts
 	PINB |= 0b00010000;
 	firstBitInterrupt = 2;
 	for (uint8_t i = 0; i < PULSES_ARRAY_SIZE; i++) {
@@ -127,20 +127,23 @@ void decodeFrame(){
 
 		//enable interrupts
 		firstBitInterrupt = 0;
+		//clear interrupt flags
+		EIFR &= 0b00;
+		SREG &= ~(1<<7);
 		EIMSK |= 0b11; //enable INT0 and INT1
 		sei();
 		PINB |= 0b00010000;
 
 
-	//char message_[32];
-	//sprintf(message_, "%d - %d\r\n", control, data);
-	//sendStr(message_);
+		//char message_[32];
+		//sprintf(message_, "%d - %d\r\n", control, data);
+		//sendStr(message_);
 
 
-	//sendByte(control);
-	sendByte(frameData);
+		//sendByte(control);
+		sendByte(frameData);
 
-	//sendByte('\n');
+		//sendByte('\n');
 
 	}
 }

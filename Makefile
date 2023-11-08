@@ -16,7 +16,10 @@ SRC=$(shell find $(SRC_FOLDER) -name '*.c')
 #programmer
 PG=avrdude
 PFLAGS=-c arduino -p atmega328p
-USB=/dev/ttyUSB1
+
+#make flash U=2    to flash to USB2
+U=1
+USB=/dev/ttyUSB$(U)
 
 
 #avr-gcc -mmcu=atmega328p -Wall -Os -I src/ -c -o main.o src/main.c
