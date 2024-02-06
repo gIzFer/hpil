@@ -4,14 +4,10 @@
 #include <avr/io.h>
 //#include <util/delay_basic.h>
 #include <stdio.h>
+#include "uart.h"
 
 #define TALK_PIN_1 PORTD4
 #define TALK_PIN_0 PORTD5
-
-#define PIN_1_ON_MACRO PORTD |= (0x01 << TALK_PIN_1);
-#define PIN_1_OFF_MACRO PORTD &= ~(0x01 << TALK_PIN_1);
-#define PIN_0_ON_MACRO PORTD |= (0x01 << TALK_PIN_0);
-#define PIN_0_OFF_MACRO PORTD &= ~(0x01 << TALK_PIN_0);
 
 
 void setupTalker();

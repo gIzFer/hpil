@@ -28,9 +28,12 @@
 int main(void) {
 	setupUart(F_CPU, BAUDRATE);
 
-	setupInterrupts();
 	setupTalker();
-	sendStr("hi!\n\r");
+	setupInterrupts();
+	sendByte(MCUSR);
+	sendByte(MCUSR);
+	sendByte(MCUSR);
+	sendStr("hi!\n");
 
 	DDRB |= (1 << LED); // set pin 13  as out
 
@@ -38,8 +41,25 @@ int main(void) {
 	//PIND |= 0b00100000;
 
 	for(;;) {
-		talk(0b101,0b10101010);
-		//decodeFrame();
+		if((PIND & 0b1100)&&(PIND & 0b1100)&&(PIND & 0b1100)){
+			__builtin_avr_delay_cycles(10);
+			PINB |= 0b00010000;
+			sample();
+			PINB |= 0b00010000;
+			//talk(0b101,0b10101010);
+			decodeFrame();
+			if(dataAvailable != 0){
+				//sendByte(frameData);
+				dataAvailable = 0;
+				//sendByte('>');
+				//sendByte(frameControl);
+				//sendByte(frameData);
+				//sendByte('\n');
+				talk(frameControl, frameData);
+				//_delay_us(1);
+			}
+		}
+
 		//_delay_us(1);
 		//PIND |= 0b00110000;
 

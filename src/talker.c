@@ -7,8 +7,14 @@ void setupTalker(){
 
 void talk(uint8_t frameControl_, uint8_t frameData_){
 	cli();
+	PINB |= 0b00010000;
+	//sendByte('#');
+	//sendByte('\n');
+	//sendByte(frameControl_);
+	//sendByte(frameData_);
+	//sendByte('\n');
 
-	#define TIME_BETWEEN_CONTROL_PULSES 18
+	#define TIME_BETWEEN_CONTROL_PULSES 18 + 4
 	if(frameControl_ & 0b100){
 		talkOne_S();
 	}else{
@@ -38,57 +44,57 @@ void talk(uint8_t frameControl_, uint8_t frameData_){
 
 
 	//DATA------------------------------------------------------------------------
-	#define TIME_BETWEEN_DATA_PULSES 18
-	if(frameControl_ & 0b1 << 7){
+	#define TIME_BETWEEN_DATA_PULSES 18 + 4
+	if(frameData_ & (1 << 7)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameControl_ & 0b1 << 6){
+	if(frameData_ & (1 << 6)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameControl_ & 0b1 << 5){
+	if(frameData_ & (1 << 5)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameControl_ & 0b1 << 4){
+	if(frameData_ & (1 << 4)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameControl_ & 0b1 << 3){
+	if(frameData_ & (1 << 3)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameControl_ & 0b1 << 2){
+	if(frameData_ & (1 << 2)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameControl_ & 0b1 << 1){
+	if(frameData_ & (1 << 1)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameControl_ & 0b1 << 0){
+	if(frameData_ & (1 << 0)){
 		talkOne();
 	}else{
 		talkZero();
@@ -112,22 +118,32 @@ void talk(uint8_t frameControl_, uint8_t frameData_){
 	}*/
 
 	//__builtin_avr_delay_cycles(16*100);
+	PINB |= 0b00010000;
 	sei();
 }
 
 
-#define TIME_BETWEEN_PULSES 14
+#define PIN_1_ON_MACRO PORTD |= (0x01 << TALK_PIN_1);
+#define PIN_1_OFF_MACRO PORTD &= ~(0x01 << TALK_PIN_1);
+#define PIN_0_ON_MACRO PORTD |= (0x01 << TALK_PIN_0);
+#define PIN_0_OFF_MACRO PORTD &= ~(0x01 << TALK_PIN_0);
+
+
+#define PIN_1_FLIP 0b10
+#define PIN_0_FLIP 0b01
+
+#define TIME_BETWEEN_PULSES 14 + 2
 void talkOne(){
 	PIN_1_ON_MACRO
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = 0b10 << TALK_PIN_1; //flip both at the same time
+	PORTD = PIN_1_FLIP << 4; //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
 	PIN_0_OFF_MACRO
 }
 void talkZero(){
 	PIN_0_ON_MACRO
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = 0b01 << TALK_PIN_1; //flip both at the same time
+	PORTD = PIN_0_FLIP << 4; //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
 	PIN_1_OFF_MACRO
 }
@@ -135,22 +151,22 @@ void talkZero(){
 void talkOne_S(){
 	PIN_1_ON_MACRO
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = 0b10 << TALK_PIN_1; //flip both at the same time
+	PORTD = PIN_1_FLIP << 4; //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = 0b01 << TALK_PIN_1; //flip both at the same time
+	PORTD = PIN_0_FLIP << 4; //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = 0b10 << TALK_PIN_1; //flip both at the same time
+	PORTD = PIN_1_FLIP << 4; //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
 	PIN_0_OFF_MACRO
 }
 void talkZero_S(){
 	PIN_0_ON_MACRO
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = 0b01 << TALK_PIN_1; //flip both at the same time
+	PORTD = PIN_0_FLIP << 4; //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = 0b10 << TALK_PIN_1; //flip both at the same time
+	PORTD = PIN_1_FLIP << 4; //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = 0b01 << TALK_PIN_1; //flip both at the same time
+	PORTD = PIN_0_FLIP << 4; //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
 	PIN_1_OFF_MACRO
 }

@@ -3,6 +3,7 @@
 #include <avr/io.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include "uart.h"
 
 /*
@@ -10,12 +11,18 @@ For whatever reason (I think both) INT0_vect & INT1_vect trigger after a signal,
 */
 
 
-#define PULSES_ARRAY_SIZE 55
 
 #define FRAME_CONTROL_BITS 4
 #define FRAME_DATA_BITS 8
 #define FRAME_SIZE (FRAME_CONTROL_BITS + FRAME_DATA_BITS)
 
+//extern volatile uint8_t pulses[PULSES_ARRAY_SIZE];
 
+//extern volatile uint8_t firstBitInterrupt; // signal received, queue decoding
 
+extern uint8_t dataAvailable;
+extern uint8_t frameControl;
+extern uint8_t frameData;
+
+void sample();
 void decodeFrame();
