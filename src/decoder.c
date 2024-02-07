@@ -1,7 +1,7 @@
 #include "decoder.h"
 #include <avr/interrupt.h>
 
-#define PULSES_ARRAY_SIZE 70
+#define PULSES_ARRAY_SIZE 128
 
 volatile uint8_t pulses[PULSES_ARRAY_SIZE];
 volatile uint8_t firstBitInterrupt; // signal received, queue decoding
@@ -22,11 +22,13 @@ for n in range(200):
 
 //24 pulses, 3 samples per pulse: 72
 //duration is ~50us, 50/72
-#define r(n) pulses[n] = PIND;__builtin_avr_delay_cycles(7);
-#define SAMPLE_SIGNAL r(0)r(1)r(2)r(3)r(4)r(5)r(6)r(7)r(8)r(9)r(10)r(11)r(12)r(13)r(14)r(15)r(16)r(17)r(18)r(19)r(20)r(21)r(22)r(23)r(24)r(25)r(26)r(27)r(28)r(29)r(30)r(31)r(32)r(33)r(34)r(35)r(36)r(37)r(38)r(39)r(40)r(41)r(42)r(43)r(44)r(45)r(46)r(47)r(48)r(49)r(50)r(51)r(52)r(53)r(54)r(55)r(56)r(57)r(58)r(59)r(60)r(61)r(62)r(63)r(64)r(65)r(66)r(67)r(68)r(69)//r(70)r(71)r(72)r(73)r(74)r(75)r(76)r(77)r(78)r(79)r(80)r(81)r(82)r(83)r(84)r(85)r(86)r(87)r(88)r(89)r(90)r(91)r(92)r(93)r(94)r(95)r(96)r(97)r(98)r(99)r(100)r(101)r(102)r(103)r(104)r(105)r(106)r(107)r(108)r(109)r(110)r(111)r(112)r(113)r(114)r(115)r(116)r(117)r(118)r(119)r(120)r(121)r(122)r(123)r(124)r(125)r(126)r(127)r(128)r(129)r(130)r(131)r(132)r(133)r(134)r(135)r(136)r(137)r(138)r(139)r(140)r(141)r(142)r(143)r(144)r(145)r(146)r(147)r(148)r(149)r(150)r(151)r(152)r(153)r(154)r(155)r(156)r(157)r(158)r(159)r(160)r(161)r(162)r(163)r(164)r(165)r(166)r(167)r(168)r(169)r(170)r(171)r(172)r(173)r(174)r(175)r(176)r(177)r(178)r(179)r(180)r(181)r(182)r(183)r(184)r(185)r(186)r(187)r(188)r(189)r(190)r(191)r(192)r(193)r(194)r(195)r(196)r(197)r(198)r(199)
+#define r(n) pulses[n] = PIND;__builtin_avr_delay_cycles(3);
+
+//for loop is too slow D:
+#define SAMPLE_SIGNAL r(0)r(1)r(2)r(3)r(4)r(5)r(6)r(7)r(8)r(9)r(10)r(11)r(12)r(13)r(14)r(15)r(16)r(17)r(18)r(19)r(20)r(21)r(22)r(23)r(24)r(25)r(26)r(27)r(28)r(29)r(30)r(31)r(32)r(33)r(34)r(35)r(36)r(37)r(38)r(39)r(40)r(41)r(42)r(43)r(44)r(45)r(46)r(47)r(48)r(49)r(50)r(51)r(52)r(53)r(54)r(55)r(56)r(57)r(58)r(59)r(60)r(61)r(62)r(63)r(64)r(65)r(66)r(67)r(68)r(69)r(70)r(71)r(72)r(73)r(74)r(75)r(76)r(77)r(78)r(79)r(80)r(81)r(82)r(83)r(84)r(85)r(86)r(87)r(88)r(89)r(90)r(91)r(92)r(93)r(94)r(95)r(96)r(97)r(98)r(99)r(100)r(101)r(102)r(103)r(104)r(105)r(106)r(107)r(108)r(109)r(110)r(111)r(112)r(113)r(114)r(115)r(116)r(117)r(118)r(119)r(120)r(121)r(122)r(123)r(124)r(125)r(126)r(127)//r(128)r(129)r(130)r(131)r(132)r(133)r(134)r(135)r(136)r(137)r(138)r(139)r(140)r(141)r(142)r(143)r(144)r(145)r(146)r(147)r(148)r(149)r(150)r(151)r(152)r(153)r(154)r(155)r(156)r(157)r(158)r(159)r(160)r(161)r(162)r(163)r(164)r(165)r(166)r(167)r(168)r(169)r(170)r(171)r(172)r(173)r(174)r(175)r(176)r(177)r(178)r(179)r(180)r(181)r(182)r(183)r(184)r(185)r(186)r(187)r(188)r(189)r(190)r(191)r(192)r(193)r(194)r(195)r(196)r(197)r(198)r(199)
 
 
-
+/*
 //starts by 1
 ISR(INT0_vect){
 	PINB |= 0b00010000;
@@ -46,7 +48,7 @@ ISR(INT1_vect){
 	firstBitInterrupt = 2;
 	EIMSK &= 0b00; //disable interrupts
 }
-
+*/
 void sample(){
 	cli();
 	PINB |= 0b00010000;
@@ -60,14 +62,17 @@ void sample(){
 	//EIMSK &= 0b00; //disable interrupts
 	sei();
 }
+
 void decodeFrame(){
 	if(firstBitInterrupt != 0){
+		PINB |= 0b00010000;
+		PINB |= 0b00010000;
 		PINB |= 0b00010000;
 		cli();
 
 		//check if empty to save time
 		uint8_t emptyCheck = 0;
-		for (uint8_t i = 0; i < 5; i++) {//unlikely any message starts with 16 zeroes ?
+		for (uint8_t i = 0; i < 15; i++) {//unlikely any message starts with 16 zeroes ?
 			if((pulses[i] & 0b00001100) != 0){
 				emptyCheck = 1;
 				//sendByte(pulses[i] & 0b00001100);
@@ -81,7 +86,7 @@ void decodeFrame(){
 		sendByte('x');
 		sendByte('\n');
 		for (uint8_t i = 0; i < PULSES_ARRAY_SIZE; i++) {
-			sendByte(pulses[i] + 48);
+			sendByte((pulses[i] & 0b00001100));
 		}
 		sendByte('\n');*/
 
@@ -90,21 +95,24 @@ void decodeFrame(){
 
 			//track where I am in the frame decoding progress, 1-12 (0-11)
 			uint8_t frameDecodingPos = 1;
+			uint8_t timesBitHasChanged = 0;//to track how many pairs of bits we have already decoded
 			//already have the first bit from which ISR triggered
 
 			//firstBitInterrupt=1 if interrupt was on 0
 			//firstBitInterrupt=2 if interrupt was on 1
 			//frameControl = (firstBitInterrupt == 1 ? 0 : 1) << 2;
 			//control = 0;
+			frameControl = 0;
 			frameData = 0;
 
 
 			uint8_t dataPair_[2];
 			memset(dataPair_, 0, 2);
 			uint8_t dataPair_ndx_ = 0;
-			uint8_t dataPair_val_prevPair = 0;
+			uint8_t dataPair_val_prevPair = 255;
+			uint8_t idleCount = 0; //1 idle (val 3) alone is noise, need at least 2 consecutive to consider its a real idle
 
-
+			//									raw signal iterate
 			for(int i = 0; i < PULSES_ARRAY_SIZE; i++){
 				uint8_t pulse = pulses[i] & 0b00001100;
 
@@ -114,22 +122,47 @@ void decodeFrame(){
 					pulse = 0;
 				}else if(pulse == 4){//4 means 1
 					pulse = 1;
-				}else if(pulse == 12){//12 shouldn't happen, signals overlapped, should be treated like an idle I guess
-					pulse = 2;
 				}else{//0 idle
 					pulse = 3;
 				}
 
-				//sendByte(pulse+48);
+				sendByte(pulse+48);
 
 
-				if(pulse == 1 || pulse == 0){//ignore idles
-					//first val and its not the same as the inmediately previous one, it needs a 3 between to equal ones to be valid
-					//abusing order of check so it doesnt evaluate pulses[i - 1] on the first run as that would crash
+				if((pulse == 1 || pulse == 0) || i == (PULSES_ARRAY_SIZE - 1)){//ignore idles or last val
+
+					//if previous pulse was an idle and now we have at least 3 it means we're onto next bit pair
+					if(dataPair_val_prevPair == 3 && idleCount > 2){ //at least 3 idles have been counted
+						idleCount = 0;
+						frameDecodingPos++;
+						dataPair_ndx_ = 0;
+						sendByte('_');
+
+						//first val and its not the same as the inmediately previous one, it needs a 3 between to equal ones to be valid
+						//abusing order of check so it doesnt evaluate pulses[i - 1] on the first run as that would crash
+
+
+						//in the first 4 bits sometimes we miss the 1st. this means all is missaligned 1 to the left as we didnt add an extra 1.
+						//To fix: As we assume each bit pair is always separated by at least 3 idles (EXCEPT THE FIRST ONE) we need to check for when we are onto the next one
+						//in the first case, which is the edge one; if timesBitHasChanged is 2 and frameDecodingPos is still 0 we add one to account for the first lost bit
+						//this ensures to always discard only the 2 first of the 28 signal bits, or the 1st of the 14 dataframe bits. The 4 or 2 first ones will be identical anyways
+
+						//discard always the first bit if we have read 2 raw signal bits CHANGES and yet no idle found
+						if(timesBitHasChanged == 2){
+							dataPair_ndx_ = 1; // restart bit pair count as if we were starting
+							//dataPair_[0] = ~(dataPair_[0] & 1); //technically redundant as it should only be 1 or 0
+						}
+					}
+
+
 					if(dataPair_ndx_ == 0 && pulse != dataPair_val_prevPair){
 						dataPair_[0] = pulse;
 						dataPair_ndx_++;
+						timesBitHasChanged++;
 					}else if(dataPair_ndx_ == 1 && dataPair_[0] != pulse){ //not repeated, for deduplication of oversampling
+						timesBitHasChanged++;
+
+
 						dataPair_val_prevPair = pulse;
 						dataPair_[1] = pulse;
 						dataPair_ndx_ = 0;
@@ -143,9 +176,9 @@ void decodeFrame(){
 								procesedBit = 1;
 							}else if(dataPair_[0] == 1 && dataPair_[1] == 0){
 								procesedBit = 0;
-							}else{//no?
-								frameControl = 255;
-							}
+							}//else{//no?
+								//frameControl = 255;
+							//}
 
 							//sendByte('(');
 							//sendByte(procesedBit+48);
@@ -158,24 +191,51 @@ void decodeFrame(){
 							//add it to the result
 							//frame decoding pos is in array, the constant is a total value, gotta -1 it
 							if(frameDecodingPos < (FRAME_CONTROL_BITS)){
-								frameControl |= procesedBit << (FRAME_CONTROL_BITS - frameDecodingPos - 1);
-								frameDecodingPos++;
+								frameControl |= procesedBit << (FRAME_CONTROL_BITS - 1 - frameDecodingPos);
+								//frameDecodingPos++;
 							}else{//its data
-								frameData |= procesedBit << (FRAME_CONTROL_BITS + FRAME_DATA_BITS - frameDecodingPos - 1);
-								frameDecodingPos++;
+								frameData |= procesedBit << (FRAME_CONTROL_BITS + FRAME_DATA_BITS - 1 - frameDecodingPos);
+								//frameDecodingPos++;
 							}
+							//if(frameDecodingPos == 11){//started by 1 so gotta shift to right and invert
+							//	frameData = (~frameData >> 1);
+							//	frameControl = (frameControl >> 1);
+							//}
+							sendByte('<');
+							sendByte(frameDecodingPos+65);
+							sendByte('>');
 
 
-						}else{
-							frameControl = 255;
-						}
+						}//else{
+							//frameControl = 255;
+						//}
 					}
+
 				}else{ //pulse was idle, so a new pulse can start with the same digit as the prev one. Set the previous value as idle and so we can start a new pair in the next loop
 					dataPair_val_prevPair = 3;
+					//dont count on the iddlecount if its the first value
+					//if(i > 0){
+						idleCount++;
+					//}
 				}
 			}//end of for
 
+			//if frameDecodingPos is 10 it means it missed the first bit. Luckily first and second bit are identical so we shift all one to the right
 
+
+			//if frameDecodingPos is 10 here it means
+			/*if(frameDecodingPos == 11){
+				frameData = (~frameData >> 1); //move 1 to the right
+				frameData |= ~(frameControl & 1) << 7;//add the LSB from the control frame to the MSB of the data frame
+
+				frameControl = (~(frameControl & 0b111) >> 1); //move 1 to the right
+
+
+			}*/
+
+			sendByte('<');
+			sendByte(frameDecodingPos+65);
+			sendByte('>');
 
 
 			dataAvailable = 1;
@@ -187,12 +247,14 @@ void decodeFrame(){
 			//sendStr(message_);
 
 
-			//sendByte('\n');
-			//sendByte(frameControl);
+			sendByte('{');
+			sendByte(frameControl);
+			sendByte('+');
 			sendByte(frameData);
 			//sendByte(firstBitInterrupt);
 
-			//sendByte('\n');
+			sendByte('}');
+			sendByte('\n');
 
 
 

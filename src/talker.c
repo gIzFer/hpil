@@ -7,7 +7,7 @@ void setupTalker(){
 
 void talk(uint8_t frameControl_, uint8_t frameData_){
 	cli();
-	PINB |= 0b00010000;
+	//PINB |= 0b00010000;
 	//sendByte('#');
 	//sendByte('\n');
 	//sendByte(frameControl_);
@@ -118,7 +118,7 @@ void talk(uint8_t frameControl_, uint8_t frameData_){
 	}*/
 
 	//__builtin_avr_delay_cycles(16*100);
-	PINB |= 0b00010000;
+	//PINB |= 0b00010000;
 	sei();
 }
 
