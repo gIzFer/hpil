@@ -46,6 +46,7 @@ void sample(){
 
 
 void addBitToFrame(uint8_t framePair_[], uint8_t position){
+
 	uint8_t procesedBit = 0;
 
 	if(framePair_[0] == 0 && framePair_[1] == 1){
@@ -59,7 +60,7 @@ void addBitToFrame(uint8_t framePair_[], uint8_t position){
 	}else{//if position is _equal or bigger_ than 4 (FRAME_CONTROL_BITS) its data
 		//frameDecodingPos goes up to 11. we need it to go only up to 7 for the byte
 		//remove the FRAME_CONTROL_BITS from the post
-		uint8_t dataPosition = FRAME_CONTROL_BITS - position;
+		uint8_t dataPosition = position - FRAME_CONTROL_BITS;
 		frameData |= procesedBit << (FRAME_DATA_BITS - 1 - dataPosition);
 	}
 }
@@ -81,7 +82,8 @@ void decodeFrame(){
 		}
 	}
 	if(emptyCheck != 0){
-		sendByte('\n');
+	frameControl = 0;
+	frameData = 0;
 
 
 
@@ -113,9 +115,9 @@ for(int i = 0; i < PULSES_ARRAY_SIZE; i++){
 	//pulse translating;
 
 	if(pulse == 8){//8 means 0
-		pulse = 0;
-	}else if(pulse == 4){//4 means 1
 		pulse = 1;
+	}else if(pulse == 4){//4 means 1
+		pulse = 0;
 	}else{//0 idle
 		pulse = 3;
 	}
@@ -123,8 +125,8 @@ for(int i = 0; i < PULSES_ARRAY_SIZE; i++){
 	sendByte(pulse+48);
 }
 sendByte('\n');
-*/
 
+*/
 
 //////////////////////////////////
 
@@ -147,16 +149,16 @@ sendByte('\n');
 			//every time bit changes store it in the temp queue
 			//if pulse changes (gets rid of duplication but counts how many idles in the else)
 			//only dedupes 2 consecutive, random idles (noise) in between bits no
-			if(pulse != prevPulse){
+			if(pulse != prevPulse || i == (PULSES_ARRAY_SIZE - 1)){
 
 				//if it's a bit
-				if(pulse == 0 || pulse == 1){
+				if(pulse == 0 || pulse == 1 || i == (PULSES_ARRAY_SIZE - 1)){
 
 
 
 					//if prev pulse was idle, now its a bit and count is bigger than 3 it means we're now onto the next frame bit
 					//check if idle and analyze the bit queue. Commit the bit to the frame
-					if(prevPulse == 3 && idleCount > 2){
+					if(prevPulse == 3 && idleCount > 2 || i == (PULSES_ARRAY_SIZE - 1)){
 						//prepare var
 						framePair_ndx = 0;
 						memset(framePair, 255, FRAME_PAIR_SIZE);
@@ -178,15 +180,7 @@ sendByte('\n');
 							framePair[0] = tempPulseQueue[filledValuesCount - 2];
 							framePair[1] = tempPulseQueue[filledValuesCount - 1];
 						}else{//if not first frame
-							/*uint8_t filledValuesCount = 0;
-							for(int j = 0; j < TEMP_PULSE_QUEUE_SIZE; j++){
-								if(tempPulseQueue[j] != 255){//if it has value
-									filledValuesCount++;
-									framePair[framePair_ndx] = tempPulseQueue[j];
-									framePair_ndx++;
-									if(framePair_ndx > 1) break;
-								}
-							}*/
+
 							framePair[0] = tempPulseQueue[0];
 							framePair[1] = tempPulseQueue[1];
 						}
@@ -194,12 +188,11 @@ sendByte('\n');
 						//at this point we should have the right framePair
 						addBitToFrame(framePair, framePos);
 						//sendStr("framePair: ");
-						sendByte('[');
+						/*sendByte('[');
 						sendByte(framePair[0]+48);
 						sendByte(framePair[1]+48);
-						//sendByte('\n');
 						sendByte(']');
-						//sendByte('\n');
+						sendByte('\n');*/
 						//clear and count on stuff
 						idleCount = 0;
 						framePos++;
@@ -210,7 +203,7 @@ sendByte('\n');
 
 					//sendByte('>');
 					//sendByte(pulse+48);
-					sendByte('\n');
+					//sendByte('\n');
 
 
 					//only add if new value, sometimes a random 3 can make something like 030
@@ -244,19 +237,22 @@ sendByte('\n');
 
 
 		}
+
 		//add last bit to frame
-		addBitToFrame(framePair, framePos);
+		//addBitToFrame(framePair, framePos);
 
 
+		PINB |= 0b00010000;
+		PINB |= 0b00010000;
 
-		sendByte('{');
-		sendByte(frameControl);
-		sendByte('+');
+		//sendByte('{');
+		//sendByte(frameControl);
+		//sendByte('+');
 		sendByte(frameData);
 		//sendByte(firstBitInterrupt);
 
-		sendByte('}');
-		sendByte('\n');
+		//sendByte('}');
+		//sendByte('\n');
 
 	}//for
 

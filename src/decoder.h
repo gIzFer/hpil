@@ -26,3 +26,5 @@ extern uint8_t frameData;
 
 void sample();
 void decodeFrame();
+
+void addBitToFrame(uint8_t framePair_[], uint8_t position);
