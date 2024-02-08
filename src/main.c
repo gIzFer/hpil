@@ -63,7 +63,7 @@ int main(void) {
 				if(commandSent.hasBeenReceivedBackFromLoop == false/* && commandSent.frameControl == frameControl && commandSent.frameData == frameData*/){
 					commandSent.hasBeenReceivedBackFromLoop = true;
 				}else{
-					//talk(frameControl, frameData);
+					talk(frameControl, frameData);
 				}
 				//_delay_us(1);
 			}
