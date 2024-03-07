@@ -73,8 +73,6 @@ void addBitToFrame(uint8_t framePair_[], uint8_t position){
 
 void decodeFrame(){
 	PINB |= 0b00010000;
-	PINB |= 0b00010000;
-	PINB |= 0b00010000;
 	cli();
 
 	//check if empty to save time
@@ -251,6 +249,9 @@ void decodeFrame(){
 		sendByte(frameData);
 		#endif
 
+		#ifdef DEBUG_FRAME_ENABLE_NEW_LINE
+			sendByte('\n');
+		#endif
 
 		//sendByte('}');
 		//sendByte('\n');

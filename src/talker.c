@@ -1,35 +1,39 @@
 #include "talker.h"
 
+const struct command IFC = {1, 0b100, 0b10010001}; // InteFace Clear
+const struct command RFC = {2, 0b101, 0}; //Ready For Command
+const struct command AAD = {3, 0b101, 0b10000000}; //Auto ADdress
+
 void setupTalker(){
-	DDRD |= (1 << TALK_PIN_1);
+		DDRD |= (1 << TALK_PIN_1);
 	DDRD |= (1 << TALK_PIN_0);
 }
 
-void talk(uint8_t frameControl_, uint8_t frameData_){
+void talk(struct command commandToSend){
 	cli();
-	//PINB |= 0b00010000;
+	PINB |= 0b00010000;
 	//sendByte('#');
 	//sendByte('\n');
-	//sendByte(frameControl_);
-	//sendByte(frameData_);
+	//sendByte(commandToSend.frameControl);
+	//sendByte(commandToSend.frameData);
 	//sendByte('\n');
 
-	#define TIME_BETWEEN_CONTROL_PULSES 18 + 4
-	if(frameControl_ & 0b100){
+	#define TIME_BETWEEN_CONTROL_PULSES 18 + 18
+	if(commandToSend.frameControl & 0b100){
 		talkOne_S();
 	}else{
 		talkZero_S();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_CONTROL_PULSES);
 
-	if(frameControl_ & 0b10){
+	if(commandToSend.frameControl & 0b10){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_CONTROL_PULSES);
 
-	if(frameControl_ & 0b1){
+	if(commandToSend.frameControl & 0b1){
 		talkOne();
 	}else{
 		talkZero();
@@ -44,57 +48,57 @@ void talk(uint8_t frameControl_, uint8_t frameData_){
 
 
 	//DATA------------------------------------------------------------------------
-	#define TIME_BETWEEN_DATA_PULSES 18 + 4
-	if(frameData_ & (1 << 7)){
+	#define TIME_BETWEEN_DATA_PULSES 18 + 18
+	if(commandToSend.frameData & (1 << 7)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameData_ & (1 << 6)){
+	if(commandToSend.frameData & (1 << 6)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameData_ & (1 << 5)){
+	if(commandToSend.frameData & (1 << 5)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameData_ & (1 << 4)){
+	if(commandToSend.frameData & (1 << 4)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameData_ & (1 << 3)){
+	if(commandToSend.frameData & (1 << 3)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameData_ & (1 << 2)){
+	if(commandToSend.frameData & (1 << 2)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameData_ & (1 << 1)){
+	if(commandToSend.frameData & (1 << 1)){
 		talkOne();
 	}else{
 		talkZero();
 	}
 	__builtin_avr_delay_cycles(TIME_BETWEEN_DATA_PULSES);
 
-	if(frameData_ & (1 << 0)){
+	if(commandToSend.frameData & (1 << 0)){
 		talkOne();
 	}else{
 		talkZero();
@@ -109,7 +113,7 @@ void talk(uint8_t frameControl_, uint8_t frameData_){
 
 	//for is too slow
 	/*for (uint8_t i = 8; i >= 1; i--) {
-		if(frameData_ & 0b1 << i){
+		if(commandToSend.frameData & 0b1 << i){
 			talkOne();
 		}else{
 			talkZero();
@@ -118,7 +122,7 @@ void talk(uint8_t frameControl_, uint8_t frameData_){
 	}*/
 
 	//__builtin_avr_delay_cycles(16*100);
-	//PINB |= 0b00010000;
+	PINB |= 0b00010000;
 	sei();
 }
 
@@ -132,7 +136,8 @@ void talk(uint8_t frameControl_, uint8_t frameData_){
 #define PIN_1_FLIP 0b10
 #define PIN_0_FLIP 0b01
 
-#define TIME_BETWEEN_PULSES 14 + 2
+//pulse duration basically
+#define TIME_BETWEEN_PULSES 14 + 4
 void talkOne(){
 	PIN_1_ON_MACRO
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);

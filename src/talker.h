@@ -9,6 +9,15 @@
 #define TALK_PIN_1 PORTD4
 #define TALK_PIN_0 PORTD5
 
+struct command{
+	uint8_t id;
+	uint8_t frameControl;
+	uint8_t frameData;
+};
+
+extern const struct command IFC; // InteFace Clear
+extern const struct command RFC; //Ready For Command
+extern const struct command AAD; //Auto ADdress
 
 void setupTalker();
 
@@ -21,4 +30,4 @@ void talkZero();
 void talkOne_S();
 void talkZero_S();
 
-void talk(uint8_t frameControl_, uint8_t frameData_);
+void talk(struct command commandToSend);
