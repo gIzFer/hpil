@@ -49,12 +49,12 @@ int main(void) {
 			//PINB |= 0b00010000;
 			//talk(0b101,0b10101010);
 			decodeFrame();
-			talk((struct command){255, frameControl, frameData});
+			//talk((struct command){255, frameControl, frameData});
 
 		}
 		//talk((struct command){255, 'b', 'w'});
 
-		//hpil_handle();
+		hpil_handle();
 
 		//parseCommand();
 

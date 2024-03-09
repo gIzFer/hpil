@@ -1,16 +1,20 @@
 #include "decoder.h"
 #include <avr/interrupt.h>
 
+//#define DEBUG_FUNC_addBitToFrame
+
 //#define DEBUG_RAW_PULSES
 //#define DEBUG_FRAME_CONTROL
-//#define DEBUG_FRAME_DATA
-//#define DEBUG_FRAME_PAIR
-//#define DEBUG_TEMP_PULSE_QUEUE
+#define DEBUG_FRAME_DATA
+//#define DEBUG_FRAME_ENABLE_NEW_LINE
+
 #define PULSES_ARRAY_SIZE 100
 
 volatile uint8_t pulses[PULSES_ARRAY_SIZE];
 //volatile uint8_t firstBitInterrupt; // signal received, queue decoding
 
+#define PULSE_1 8
+#define PULSE_0 4
 
 uint8_t dataAvailable;
 uint8_t frameControl;
@@ -54,11 +58,19 @@ void addBitToFrame(uint8_t framePair_[], uint8_t position){
 
 	uint8_t procesedBit = 0;
 
-	if(framePair_[0] == 0 && framePair_[1] == 1){
+	if(framePair_[0] == PULSE_0 && framePair_[1] == PULSE_1){
 		procesedBit = 0;
-	}else if(framePair_[0] == 1 && framePair_[1] == 0){
+	}else if(framePair_[0] == PULSE_1 && framePair_[1] == PULSE_0){
 		procesedBit = 1;
 	}
+
+	#ifdef DEBUG_FUNC_addBitToFrame
+	sendByte('{');
+	sendByte(position + 48);
+	sendByte(':');
+	sendByte(procesedBit + 48);
+	sendByte('}');
+	#endif
 	if(position < (FRAME_CONTROL_BITS)){
 		//the bit is stored from MSB to LSB / left to right: 3 - pos(1,2,3)
 		frameControl |= procesedBit << (FRAME_CONTROL_BITS - 1 - position);
@@ -94,7 +106,7 @@ void decodeFrame(){
 		uint8_t prevPulse = 255;
 		#define STARTING_FRAME_POS 1
 		uint8_t framePos = STARTING_FRAME_POS;
-		#define TEMP_PULSE_QUEUE_SIZE 4
+		#define TEMP_PULSE_QUEUE_SIZE 40
 		uint8_t tempPulseQueue[TEMP_PULSE_QUEUE_SIZE];
 		memset(tempPulseQueue, 255, TEMP_PULSE_QUEUE_SIZE);
 		uint8_t tempPulseQueue_ndx = 0;
@@ -133,109 +145,56 @@ void decodeFrame(){
 
 
 
-		for(int i = 0; i < PULSES_ARRAY_SIZE; i++){
+		for(int i = 1; i < PULSES_ARRAY_SIZE; i++){
 			uint8_t pulse = pulses[i] & 0b00001100;
+			uint8_t pulse_prev = ((i-1) < PULSES_ARRAY_SIZE) ? (pulses[i-1] & 0b00001100) : 255;
+			uint8_t pulse_next = ((i+1) < PULSES_ARRAY_SIZE) ? (pulses[i+1] & 0b00001100) : 255;
 
-			//pulse translating;
+			/*//pulse translating;
 			if(pulse == 8){
 				pulse = 1;
 			}else if(pulse == 4){
 				pulse = 0;
 			}else{
 				pulse = 3;
+			}*/
+
+			//#define PULSE_(ndx) (pulses[ndx] & 0b00001100)
+
+
+
+			if(pulse != prevPulse){//if pulse is different than the last stored one
+				//exception: random idles make it through, but its no more than 1 single one, on which case we skip
+
+				//if pulse is 0 but neither nexty or prev pulses are skip this run
+				if(pulse == PULSE_1 || pulse == PULSE_0 || (pulse == 0 && (pulse_prev == 0 || pulse_next == 0))) {
+					tempPulseQueue[tempPulseQueue_ndx] = pulse;
+					tempPulseQueue_ndx++;
+					//sendByte(pulse + 48);
+					//sendByte(tempPulseQueue_ndx);
+				}
+				prevPulse = pulse;
 			}
 
 
-			//every time bit changes store it in the temp queue
-			//if pulse changes (gets rid of duplication but counts how many idles in the else)
-			//only dedupes 2 consecutive, random idles (noise) in between bits no
-			if(pulse != prevPulse || i == (PULSES_ARRAY_SIZE - 1)){
 
-				//if it's a bit
-				if(pulse == 0 || pulse == 1 || i == (PULSES_ARRAY_SIZE - 1)){
-
-
-
-					//if prev pulse was idle, now its a bit and count is bigger than 3 it means we're now onto the next frame bit
-					//check if idle and analyze the bit queue. Commit the bit to the frame
-					if(prevPulse == 3 && idleCount > 2 || i == (PULSES_ARRAY_SIZE - 1)){
-						//prepare var
-						framePair_ndx = 0;
-						memset(framePair, 255, FRAME_PAIR_SIZE);
-
-						#ifdef DEBUG_TEMP_PULSE_QUEUE
-						for(int j = 0; j < TEMP_PULSE_QUEUE_SIZE; j++){
-							if(tempPulseQueue[j] != 255){//if it has value
-								sendByte(tempPulseQueue[j]+48);
-							}
-						}
-						#endif
-
-						//if framePos is still the default STARTING_FRAME_POS it means we're onto the first bit which is a special case
-						// there are 2 bits that are not separated by an idle so first time here we read right to left instead
-						if(framePos == STARTING_FRAME_POS){
-
-							uint8_t filledValuesCount = 0;
-							for(int j = TEMP_PULSE_QUEUE_SIZE - 1; j >= 0; j--){
-								if(tempPulseQueue[j] != 255){//if it has value
-									filledValuesCount++;
-								}
-							}
-							framePair[0] = tempPulseQueue[filledValuesCount - 2];
-							framePair[1] = tempPulseQueue[filledValuesCount - 1];
-						}else{//if not first frame
-
-							framePair[0] = tempPulseQueue[0];
-							framePair[1] = tempPulseQueue[1];
-						}
-
-						//at this point we should have the right framePair
-						addBitToFrame(framePair, framePos);
-
-
-						#ifdef DEBUG_FRAME_PAIR
-						sendByte('[');
-						sendByte(framePair[0]+48);
-						sendByte(framePair[1]+48);
-						sendByte(']');
-						sendByte('\n');
-						#endif
-						//clear and count on stuff
-						idleCount = 0;
-						framePos++;
-						tempPulseQueue_ndx = 0;
-						memset(tempPulseQueue, 255, TEMP_PULSE_QUEUE_SIZE);
-					}
-
-
-					//sendByte('>');
-					//sendByte(pulse+48);
-					//sendByte('\n');
-
-
-					//only add if new value, sometimes a random 3 can make something like 030
-					uint8_t tempPulseQueue_ndx_prev = tempPulseQueue_ndx == 0 ? (TEMP_PULSE_QUEUE_SIZE - 1) : (tempPulseQueue_ndx - 1);
-
-
-					if(tempPulseQueue[tempPulseQueue_ndx_prev] != pulse){
-						tempPulseQueue[tempPulseQueue_ndx] = pulse;
-						tempPulseQueue_ndx++;
-					}
-
-					if(tempPulseQueue_ndx > (TEMP_PULSE_QUEUE_SIZE - 1)){
-						tempPulseQueue_ndx = 0;
-						//sendStr("tempPulseQueue_ndx > TEMP_PULSE_QUEUE_SIZE . should not happen");
-					}
-
-				}
-
-				prevPulse = pulse;
-			}else if(pulse == 3){
-				//if its an idle count how many continuous. It separates frame bits and should be at least 3 pulses long
-				idleCount++;
-			}//if else
 
 		}
+		//sendByte('\n');
+
+			//	sendByte('X');
+		for(int i = 2; i < tempPulseQueue_ndx; i++){
+				//sendByte(tempPulseQueue[i]);
+
+			if(tempPulseQueue[i] == 0){
+			//		sendByte('|');
+			//				sendByte(framePos);
+			//						sendByte('|');
+				addBitToFrame(tempPulseQueue + i -2, framePos);
+				framePos++;
+			}
+		}
+		//sendByte('\n');
 
 
 		PINB |= 0b00010000;
@@ -250,7 +209,7 @@ void decodeFrame(){
 		#endif
 
 		#ifdef DEBUG_FRAME_ENABLE_NEW_LINE
-			sendByte('\n');
+		sendByte('\n');
 		#endif
 
 		//sendByte('}');

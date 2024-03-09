@@ -142,6 +142,14 @@ void hpil_handle(){
 				sendByte('b');
 				talk((struct command){255, 0b101, 0b01100001});
 			}
+			if(command[0] == 'n'){ //NRE Not Remote Enable
+				sendByte('n');
+				talk((struct command){255, 0b100, 0b10010011});
+			}
+			if(command[0] == 'm'){ //REN  Remote Enable
+				sendByte('m');
+				talk((struct command){255, 0b100, 0b10010010});
+			}
 
 
 			if(command[0] == 'q'){//set as LAD
@@ -164,11 +172,11 @@ void hpil_handle(){
 
 			if(command[0] == 'a'){ //char
 				sendByte('a');
-				talk((struct command){255, 0, 'B'});
+				talk((struct command){255, 0, 'D'});
 			}
 			if(command[0] == 's'){ //char
 				sendByte('s');
-				talk((struct command){255, 0, '1'});
+				talk((struct command){255, 0, '2'});
 			}
 			if(command[0] == 'd'){ //char
 				sendByte('d');
@@ -181,6 +189,18 @@ void hpil_handle(){
 			if(command[0] == 'g'){ //EOTransmission
 				sendByte('f');
 				talk((struct command){255, 0b101, 0b010000});
+			}
+			if(command[0] == 'h'){ //char
+				sendByte('h');
+				talk((struct command){255, 0, 'B'});
+			}
+			if(command[0] == 'j'){ //char
+				sendByte('j');
+				talk((struct command){255, 0, '1'});
+			}
+			if(command[0] == 'k'){ //char
+				sendByte('k');
+				talk((struct command){255, 0, 'F'});
 			}
 
 			/*if(command[0] == 'b'){
