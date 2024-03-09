@@ -1,10 +1,13 @@
 #pragma once
 
 #include <stdint.h>
+
+//paramBits is set as a mask
 struct command{
 	uint8_t id;
 	uint8_t frameControl;
 	uint8_t frameData;
+	uint8_t paramBits;
 };
 
 extern const struct command messages[53];

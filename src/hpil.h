@@ -7,6 +7,7 @@
 #include "uart.h"
 #include "decoder.h"
 #include "talker.h"
+#include "messages.h"
 
 
 struct sentCommandState{

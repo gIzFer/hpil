@@ -1,29 +1,31 @@
 #include "uart.h"
 
-char command[commandSize];
-uint8_t commandIndex;
+char buffer[BUFFER_SIZE];
+uint8_t bufferIndex;
+char command[BUFFER_SIZE];
 bool commandParsed;
 
 volatile unsigned char value;
 ISR(USART_RX_vect){
 	value = UDR0;
-	commandParsed = false;
-	command[commandIndex] = value;
+	buffer[bufferIndex] = value;
 	if(value == '\n'){
-		commandIndex = 0;
-		memset(command, 0, sizeof(command));
+		commandParsed = false;
+		memcpy(command, buffer, BUFFER_SIZE);
+		memset(buffer, 0, BUFFER_SIZE);
+		bufferIndex = 0;
 		return;
 	}
-	if(commandIndex < 15){
-		commandIndex++;
+	if(bufferIndex < (BUFFER_SIZE - 1)){
+		bufferIndex++;
 	}else{
-		commandIndex = 0;
-		memset(command, 0, sizeof(command));
+		bufferIndex = 0;
+		memset(buffer, 0, BUFFER_SIZE);
 	}
 }
 
 void setupUart(uint32_t freq_cpu, uint32_t baudRate){
-	commandIndex = 0;
+	bufferIndex = 0;
 	//enable tx
 	uint16_t UBRR0_value = (freq_cpu/(baudRate*8))-1;
 	UCSR0A |= 1<<U2X0;
@@ -40,7 +42,4 @@ void sendStr(char* str){
 	for (uint8_t i = 0; i < strlen(str); i++){
 		sendByte(str[i]);
 	}
-}
-void parseCommand(){
-
 }
