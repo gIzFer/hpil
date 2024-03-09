@@ -1,6 +1,11 @@
 #include "decoder.h"
 #include <avr/interrupt.h>
 
+//cursed optimization
+#define STRINGIFY(X) #X
+#define OPTIMIZE_LOOP_PULSES_ARRAY_SIZE(X) _Pragma(STRINGIFY(X))
+#define OPTIMIZE_PARAMS GCC unroll
+
 //#define DEBUG_FUNC_addBitToFrame
 
 //#define DEBUG_RAW_PULSES
@@ -24,25 +29,19 @@ uint8_t frameData;
 
 
 
-
 //24 pulses, 3 samples per pulse: 72
-//duration is ~50us, 50/72
-#define r(n) pulses[n] = PIND;__builtin_avr_delay_cycles(4);
-
-//for loop is too slow D:
-/*
-generate with python:
-for n in range(200):
-    print("r({})".format(n), end="")
-*/
-#define SAMPLE_SIGNAL r(0)r(1)r(2)r(3)r(4)r(5)r(6)r(7)r(8)r(9)r(10)r(11)r(12)r(13)r(14)r(15)r(16)r(17)r(18)r(19)r(20)r(21)r(22)r(23)r(24)r(25)r(26)r(27)r(28)r(29)r(30)r(31)r(32)r(33)r(34)r(35)r(36)r(37)r(38)r(39)r(40)r(41)r(42)r(43)r(44)r(45)r(46)r(47)r(48)r(49)r(50)r(51)r(52)r(53)r(54)r(55)r(56)r(57)r(58)r(59)r(60)r(61)r(62)r(63)r(64)r(65)r(66)r(67)r(68)r(69)r(70)r(71)r(72)r(73)r(74)r(75)r(76)r(77)r(78)r(79)r(80)r(81)r(82)r(83)r(84)r(85)r(86)r(87)r(88)r(89)r(90)r(91)r(92)r(93)r(94)r(95)r(96)r(97)r(98)r(99)
-
-
+//message duration is ~50us, 50/72
+//each reading cycle takes 500ns
 
 void sample(){
 	cli();
 	PINB |= 0b00010000;
-	SAMPLE_SIGNAL
+	OPTIMIZE_LOOP_PULSES_ARRAY_SIZE(OPTIMIZE_PARAMS PULSES_ARRAY_SIZE)
+	for (uint8_t i = 0; i < PULSES_ARRAY_SIZE; i++) {
+		pulses[i] = PIND;
+		__builtin_avr_delay_cycles(4);
+	}
+
 	PINB |= 0b00010000;
 	sei();
 }
@@ -84,7 +83,9 @@ void decodeFrame(){
 
 	//check if empty to save time
 	uint8_t emptyCheck = 0;
-	for (uint8_t i = 0; i < PULSES_ARRAY_SIZE / 3; i++) {
+
+	OPTIMIZE_LOOP_PULSES_ARRAY_SIZE(OPTIMIZE_PARAMS PULSES_ARRAY_SIZE)
+	for (uint8_t i = 0; i < PULSES_ARRAY_SIZE; i++) {
 		if((pulses[i] & 0b00001100) != 0){
 			emptyCheck = 1;
 			break;
@@ -100,17 +101,12 @@ void decodeFrame(){
 		uint8_t prevPulse = 255;
 		#define STARTING_FRAME_POS 1
 		uint8_t framePos = STARTING_FRAME_POS;
-		#define TEMP_PULSE_QUEUE_SIZE 40
+		#define TEMP_PULSE_QUEUE_SIZE 36
 		uint8_t tempPulseQueue[TEMP_PULSE_QUEUE_SIZE];
 		memset(tempPulseQueue, 255, TEMP_PULSE_QUEUE_SIZE);
 		uint8_t tempPulseQueue_ndx = 0;
 
-		uint8_t idleCount = 0;
 
-		#define FRAME_PAIR_SIZE 2
-		uint8_t framePair[2];
-		memset(framePair, 255, FRAME_PAIR_SIZE);
-		uint8_t framePair_ndx = 0;
 
 
 
@@ -139,6 +135,8 @@ void decodeFrame(){
 
 
 		//deduplicate and create simple tempPulseQueue
+		//#define unrollLoop _Pragma(GCC unroll PULSES_ARRAY_SIZE)
+		OPTIMIZE_LOOP_PULSES_ARRAY_SIZE(OPTIMIZE_PARAMS PULSES_ARRAY_SIZE)
 		for(int i = 1; i < PULSES_ARRAY_SIZE; i++){
 			uint8_t pulse = pulses[i] & 0b00001100;
 			uint8_t pulse_prev = ((i-1) < PULSES_ARRAY_SIZE) ? (pulses[i-1] & 0b00001100) : 255;
@@ -156,6 +154,7 @@ void decodeFrame(){
 		}
 
 		//parse tempPulseQueue into frameControl and frameData
+		OPTIMIZE_LOOP_PULSES_ARRAY_SIZE(OPTIMIZE_PARAMS TEMP_PULSE_QUEUE_SIZE)
 		for(int i = 2; i < tempPulseQueue_ndx; i++){
 			if(tempPulseQueue[i] == 0){
 				addBitToFrame(tempPulseQueue + i -2, framePos);

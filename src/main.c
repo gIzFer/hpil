@@ -30,7 +30,7 @@ int main(void) {
 	setupUart(F_CPU, BAUDRATE);
 
 	setupTalker();
-	hpil_setup();
+
 	setupInterrupts();
 
 

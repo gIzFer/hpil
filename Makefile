@@ -5,7 +5,7 @@ OUT=build/main.elf
 
 #compiler
 CC=avr-gcc
-CFLAGS=-mmcu=atmega328p -Wall -Os
+CFLAGS=-mmcu=atmega328p -Ofast -Werror -Wall -Wextra -funroll-loops -fvariable-expansion-in-unroller --param=min-pagesize=0 -ffunction-sections -fdata-sections -Wl,--gc-sections,--print-gc-sections
 
 
 SRC_FOLDER=src
@@ -38,6 +38,8 @@ build: prepare $(OBJECTS)
 	$(info    SRC is $(SRC))
 	$(info    OBJECTS is $(OBJECTS))
 	$(CC) $(CFLAGS) -I $(SRC_FOLDER) -o $(OUT) $(OBJECTS)
+	du -b $(OUT)
+	avr-size -C --mcu=atmega328p $(OUT)
 
 
 #build: prepare
@@ -46,12 +48,12 @@ build: prepare $(OBJECTS)
 
 
 
-flash: prepare build killScreen
+flash: prepare build
 	$(PG) $(PFLAGS) -P $(USB) -U flash\:w\:$(OUT)
 
 clean:
 	@echo ">removing build"; \
-	rm -rf $(BUILD_FOLDER)
+	rm -rf $(BUILD_FOLDER)/*
 
 prepare:
 	@if [ ! -d "build" ]; then \
@@ -60,6 +62,3 @@ prepare:
 	else \
 		echo ">build folder exists"; \
 	fi
-
-killScreen:
-	killall screen || true
