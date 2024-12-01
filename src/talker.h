@@ -9,7 +9,8 @@
 
 #define TALK_PIN_1 PORTD4
 #define TALK_PIN_0 PORTD5
-
+#define H_BRIDGE
+//#define RS485
 
 void setupTalker();
 

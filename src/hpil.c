@@ -11,7 +11,7 @@ void hpil_handle(){
 		//sendByte(command[1]);
 		//sendByte('\n');
 		struct command messageToSend;
-		if(command[0] == 100){//command code 100 is reply last message received
+		if(command[0] == 53){//command code 53 is reply last message received
 			messageToSend.frameControl = frameControl;
 			messageToSend.frameData = frameData;
 		}else{

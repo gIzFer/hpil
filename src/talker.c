@@ -101,29 +101,58 @@ void talk(struct command commandToSend){
 	sei();
 }
 
+#ifdef H_BRIDGE
+///*
+#define PIN_1_ON_MACRO PORTD |= (0b01 << TALK_PIN_1);
+#define PIN_1_OFF_MACRO PORTD &= ~(0b01 << TALK_PIN_1);
+#define PIN_0_ON_MACRO PORTD |= (0b01 << TALK_PIN_0);
+#define PIN_0_OFF_MACRO PORTD &= ~(0b01 << TALK_PIN_0);
+#define PIN_1_FLIP PORTD = 0b10 << 4;
+#define PIN_0_FLIP PORTD = 0b01 << 4;
+//*/
+/*
+#define PIN_1_ON_MACRO PORTD |= (0b10 << TALK_PIN_1);
+#define PIN_1_OFF_MACRO PORTD &= ~(0b10 << TALK_PIN_1);
+#define PIN_0_ON_MACRO PORTD |= (0b01 << TALK_PIN_1);
+#define PIN_0_OFF_MACRO PORTD &= ~(0b01 << TALK_PIN_1);
+#define PIN_1_FLIP PORTD = 0b10 << 4;
+#define PIN_0_FLIP PORTD = 0b01 << 4;
+//*/
 
-#define PIN_1_ON_MACRO PORTD |= (0x01 << TALK_PIN_1);
-#define PIN_1_OFF_MACRO PORTD &= ~(0x01 << TALK_PIN_1);
-#define PIN_0_ON_MACRO PORTD |= (0x01 << TALK_PIN_0);
-#define PIN_0_OFF_MACRO PORTD &= ~(0x01 << TALK_PIN_0);
+#elif defined(RS485)
+//*
+#define PIN_1_ON_MACRO PORTD = (0b11<< TALK_PIN_1);
+#define PIN_1_OFF_MACRO PORTD = 0;
+#define PIN_0_ON_MACRO PORTD = (0b10 << TALK_PIN_1);
+#define PIN_0_OFF_MACRO PORTD = 0;
+#define PIN_1_FLIP PORTD = 0b10 << TALK_PIN_1;
+#define PIN_0_FLIP PORTD = 0b11 << TALK_PIN_1;
+//*/
+/*inverted
+#define PIN_1_ON_MACRO PORTD = (0b11<< TALK_PIN_1);
+#define PIN_1_OFF_MACRO PORTD = 0;
+#define PIN_0_ON_MACRO PORTD = (0b01 << TALK_PIN_1);
+#define PIN_0_OFF_MACRO PORTD = 0;
+#define PIN_1_FLIP PORTD = 0b01 << TALK_PIN_1;
+#define PIN_0_FLIP PORTD = 0b11 << TALK_PIN_1;
+//*/
 
+#endif
 
-#define PIN_1_FLIP 0b10
-#define PIN_0_FLIP 0b01
 
 //pulse duration basically
 #define TIME_BETWEEN_PULSES 14 + 4
 void talkOne(){
 	PIN_1_ON_MACRO
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = PIN_1_FLIP << 4; //flip both at the same time
+	PIN_1_FLIP //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
 	PIN_0_OFF_MACRO
 }
 void talkZero(){
 	PIN_0_ON_MACRO
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = PIN_0_FLIP << 4; //flip both at the same time
+	PIN_0_FLIP //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
 	PIN_1_OFF_MACRO
 }
@@ -131,22 +160,22 @@ void talkZero(){
 void talkOne_S(){
 	PIN_1_ON_MACRO
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = PIN_1_FLIP << 4; //flip both at the same time
+	PIN_1_FLIP //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = PIN_0_FLIP << 4; //flip both at the same time
+	PIN_0_FLIP //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = PIN_1_FLIP << 4; //flip both at the same time
+	PIN_1_FLIP //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
 	PIN_0_OFF_MACRO
 }
 void talkZero_S(){
 	PIN_0_ON_MACRO
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = PIN_0_FLIP << 4; //flip both at the same time
+	PIN_0_FLIP //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = PIN_1_FLIP << 4; //flip both at the same time
+	PIN_1_FLIP //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
-	PORTD = PIN_0_FLIP << 4; //flip both at the same time
+	PIN_0_FLIP //flip both at the same time
 	__builtin_avr_delay_cycles(TIME_BETWEEN_PULSES);
 	PIN_1_OFF_MACRO
 }

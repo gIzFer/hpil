@@ -35,7 +35,7 @@ int main(void) {
 
 
 
-	sendStr("hi!\n");
+	//sendStr("hi!\n");
 
 	for(;;) {
 		if((PIND & 0b1100)){
