@@ -5,10 +5,12 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define BUFFER_SIZE 4
+#define UART_BUFFER_SIZE 4
+#define LINE_TERMINATOR '\n'
 
-extern char command[BUFFER_SIZE];
-extern bool commandParsed; //set to 0 whenever something is received
+//when we receive a command from serial its stored here and its marked as unparsed
+extern char uart_command[UART_BUFFER_SIZE];
+extern bool uart_commandParsed; //set to 0 (false) whenever something is received
 
 
 void setupUart(uint32_t freq_cpu, uint32_t baudRate);

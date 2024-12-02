@@ -1,22 +1,22 @@
 #include "hpil.h"
 
+struct command messageToSend;
 void hpil_handle(){
 
 	//commandParsed is set from uart
-	if(commandParsed == false){
-		commandParsed = true;
+	if(uart_commandParsed == false){
+		uart_commandParsed = true;
 
 		//sendByte('c');
 		//sendByte(command[0]);
 		//sendByte(command[1]);
 		//sendByte('\n');
-		struct command messageToSend;
-		if(command[0] == 53){//command code 53 is reply last message received
+		if(uart_command[0] == 101){//custom command code 201 is reply last message receive
 			messageToSend.frameControl = frameControl;
 			messageToSend.frameData = frameData;
 		}else{
-			messageToSend = messages[(uint8_t) command[0]];
-			messageToSend.frameData |= (command[1] & messages[(uint8_t) command[0]].paramBits);
+			messageToSend = messages[(uint8_t) uart_command[0]];
+			messageToSend.frameData |= (uart_command[1] & messages[(uint8_t) uart_command[0]].paramBits);
 		}
 
 		//sendByte('s');

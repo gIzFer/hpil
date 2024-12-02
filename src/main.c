@@ -4,7 +4,7 @@
 #define BAUDRATE 115200
 
 #define VERBOSE
-
+#define DEBUG_PIN
 
 
 #include <util/delay.h>
@@ -21,12 +21,14 @@
 #include "talker.h"
 #include "hpil.h"
 
-
-#define LED PORTB4 //used for debugging
-
+#ifdef DEBUG_PIN
+	#define LED PORTB4 //pin 12 for debugging
+#endif
 
 int main(void) {
+#ifdef DEBUG_PIN
 	DDRB |= (1 << LED); // set pin 12 as out
+#endif
 	setupUart(F_CPU, BAUDRATE);
 
 	setupTalker();
@@ -38,7 +40,7 @@ int main(void) {
 	//sendStr("hi!\n");
 
 	for(;;) {
-		if((PIND & 0b1100)){
+		if((PIND & 0b1100)){//if any of the input pins read a high
 			sample();
 			decodeFrame();
 		}

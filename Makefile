@@ -38,7 +38,8 @@ build: prepare $(OBJECTS)
 	$(info    SRC is $(SRC))
 	$(info    OBJECTS is $(OBJECTS))
 	$(CC) $(CFLAGS) -I $(SRC_FOLDER) -o $(OUT) $(OBJECTS)
-	du -b $(OUT)
+	$(info    OUT is $(OUT))
+	du -bh $(OUT)
 	avr-size -C --mcu=atmega328p $(OUT)
 
 
