@@ -35,10 +35,6 @@ int main(void) {
 
 	setupInterrupts();
 
-
-
-	//sendStr("hi!\n");
-
 	for(;;) {
 		if((PIND & 0b1100)){//if any of the input pins read a high
 			sample();
