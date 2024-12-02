@@ -32,4 +32,4 @@ They are for extra messages you can receive from the device  like errors
 
 
 # todo:
-	- read pins instead of delays when talking to be able to read answer at the same time im writing
+	- read pins instead of delays (NOPs) when talking to be able to read answer at the same time im writing

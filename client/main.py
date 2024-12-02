@@ -10,17 +10,8 @@ args = parser.parse_args()
 
 print("start")
 multimeter = HP3468A(args.usb_id)
-multimeter.setDisplay(multimeter.displayModes.normal)
-#time.sleep(.5)
-multimeter.setDigits(5)
-print(multimeter.readSingleValue())
 
-time.sleep(2)
-print("c")
-multimeter.setDisplay(multimeter.displayModes.text,  "B")
-
-
-#time.sleep(1)
+multimeter.setDisplay(multimeter.displayModes.text,  "HELLO WORLD")
 
 print("end")
 
