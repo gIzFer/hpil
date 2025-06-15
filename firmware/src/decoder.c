@@ -9,6 +9,7 @@
 //#define DEBUG_FUNC_addBitToFrame
 
 //#define DEBUG_RAW_PULSES
+//#define DEBUG_DEDUPLICATED_PULSES
 //#define DEBUG_FRAME_CONTROL
 //#define DEBUG_FRAME_DATA
 //#define DEBUG_FRAME_ENABLE_NEW_LINE
@@ -99,8 +100,8 @@ void decodeFrame(){
 
 
 		uint8_t prevPulse = 255;
-		#define STARTING_FRAME_POS 1
-		uint8_t framePos = STARTING_FRAME_POS;
+		#define STARTING_FRAME_POS FRAME_SIZE
+		uint8_t framePos = STARTING_FRAME_POS - 1;
 		#define TEMP_PULSE_QUEUE_SIZE 36
 		uint8_t tempPulseQueue[TEMP_PULSE_QUEUE_SIZE];
 		memset(tempPulseQueue, 255, TEMP_PULSE_QUEUE_SIZE);
@@ -153,12 +154,32 @@ void decodeFrame(){
 			}
 		}
 
+		#ifdef DEBUG_DEDUPLICATED_PULSES/////////////////////////////////
+		for(int i = 0; i < TEMP_PULSE_QUEUE_SIZE; i++){
+			uint8_t pulse = tempPulseQueue[i];
+			//sendByte(pulse+48);
+			//pulse translating;
+
+			if(pulse == 8){//8 means 0
+				pulse = 1;
+			}else if(pulse == 4){//4 means 1
+				pulse = 0;
+			}else{//0 idle
+				pulse = 3;
+			}
+
+			sendByte(pulse+48);
+		}
+		sendByte('\n');
+		#endif//////////////////////////////////
+
 		//parse tempPulseQueue into frameControl and frameData
 		OPTIMIZE_LOOP_PULSES_ARRAY_SIZE(OPTIMIZE_PARAMS TEMP_PULSE_QUEUE_SIZE)
-		for(int i = 2; i < tempPulseQueue_ndx; i++){
-			if(tempPulseQueue[i] == 0){
-				addBitToFrame(tempPulseQueue + i -2, framePos);
-				framePos++;
+		for(int i = tempPulseQueue_ndx; i > 0 ; i--){
+			if(tempPulseQueue[i] == 8 || tempPulseQueue[i] == 4){
+				addBitToFrame(tempPulseQueue + i - 1, framePos);
+				framePos--;
+				i--;
 			}
 		}
 

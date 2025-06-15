@@ -12,7 +12,7 @@ For whatever reason (I think both) INT0_vect & INT1_vect trigger after a signal,
 
 
 
-#define FRAME_CONTROL_BITS 4
+#define FRAME_CONTROL_BITS 3
 #define FRAME_DATA_BITS 8
 #define FRAME_SIZE (FRAME_CONTROL_BITS + FRAME_DATA_BITS)
 
