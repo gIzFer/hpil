@@ -34,3 +34,4 @@ They are for extra messages you can receive from the device  like errors
 # todo:
 - read pins instead of delays (NOPs) when talking to be able to read answer at the same time im writing
 - add images to readme
+- add "console mode" so no need for the python client, to be able to directly send the commands to it
