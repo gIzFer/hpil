@@ -25,7 +25,8 @@ class HP3468A:
 	("AMP", auto()), ("NMP", auto()), ("IMP", auto()), ("RETURN_LAST_RECEIVED", 101)])
 
 	ser = None
-
+	ifcMaxTries = 10
+	ifcTryDelay = 1 # in s
 	#status bytes
 	#byte 1
 	function = None
@@ -76,19 +77,34 @@ class HP3468A:
 
 	def __init__(self, usb_id):
 		self.ser = serial.Serial("/dev/ttyUSB" + str(usb_id), 115200, timeout=1)
-		#print(self.ser.isOpen())
+		print(self.ser.isOpen())
+		#print(self.ser.readline())
+		time.sleep(1)
+		if(len(self.ser.readline()) > 0): #device prints (idk why lol - to check firmware) trash as it resets from opening the connection
+			print("device ok")
+		#	pass
+		#else:
+		#	raise Exception('device not ok')
 		self.init()
+
 	def init(self):
-		self.talk(self.msgCodes.SDC)
-		time.sleep(0.5)
-		self.talk(self.msgCodes.IFC)
-		time.sleep(0.1)
-		self.talk(self.msgCodes.IFC)
-		time.sleep(0.1)
-		self.talk(self.msgCodes.IFC)
-		time.sleep(0.1)
-		self.talk(self.msgCodes.RFC)
-		time.sleep(0.1)
+		#self.talk(self.msgCodes.SDC)
+		#time.sleep(0.5)
+		triesCount = 0
+		success = False
+		while(triesCount < self.ifcMaxTries and success == False):
+			triesCount+=1
+			self.rawTalk(self.msgCodes.IFC)
+			time.sleep(self.ifcTryDelay)
+			if(len(self.ser.readline()) > 0):
+				success = True
+
+		if(success == False):
+			raise Exception('No answer. Tried {} times with between try delay of {}s'.format(self.ifcMaxTries, self.ifcTryDelay))
+
+		self.rawTalk(self.msgCodes.RFC)
+		if(len(self.ser.readline()) == 0):
+			raise Exception("RFC FAILED")
 
 	def startTransmission(self):
 		self.talk(self.msgCodes.REN)
@@ -98,31 +114,18 @@ class HP3468A:
 		self.talk(self.msgCodes.NRE)
 		self.talk(self.msgCodes.UNL)
 
+	#doesnt read answer back, exists to implement retry system in init
 	def rawTalk(self, command, data=0):
-		#print(command)
-		#print(command.value)
 		if not isinstance(command, self.msgCodes):
 			raise Exception('talk() invalid command (valid: self.msgCodes: {})'.format(list(multimeter.msgCodes.__members__)))
 		#print("sending cmd {}, data: {} ({})".format(command.value, data, chr(data)))
 		self.ser.write([command.value, data, 10])
-		#response = self.ser.read(3)
+		time.sleep(0.05)
 
+	def talk(self, command, data=0): #rawTalk but with read answer
+		self.rawTalk(command, data)
 		response = self.ser.readline()
-		#print(response)
-		#print(len(response))
-
-		return response
-
-	def talk(self, command, data=0):
-		response = self.rawTalk(command, data)
-		#print(command)
-		#print(data)
-		time.sleep(0.1)#this should be a rfc spam until right answer
-		self.ser.write([self.msgCodes.RFC.value, 0, 10])
-		#self.ser.read(3)
-		response = self.ser.readline()
-		#print(response.decode('ascii'))
-		return response
+		return bytearray(response)
 
 
 
@@ -137,7 +140,7 @@ class HP3468A:
 
 		self.talk(self.msgCodes.DAB, ord('D'))
 		if(displayMode_ == self.displayModes.normal):
-			self.talk(self.msgCodes.END, ord(self.displayModes.normal.value))
+			self.talk(self.msgCodes.DAB, ord(self.displayModes.normal.value))
 		elif(displayMode_ == self.displayModes.text):
 			self.talk(self.msgCodes.DAB, ord(self.displayModes.text.value))
 			cmd = self.msgCodes.DAB
@@ -234,14 +237,14 @@ class HP3468A:
 	#HP3468A.finishRead()
 	def quickRead(self, first):
 
-		newVal = self.rawTalk(self.msgCodes.SDA if first else self.msgCodes.RETURN_LAST_RECEIVED)
+		newVal = self.talk(self.msgCodes.SDA if first else self.msgCodes.RETURN_LAST_RECEIVED)
 
 		value = chr(newVal[1])
 
 
 		#fullStrDone = False
 		for i in range(0, 12):
-			newVal = self.rawTalk(self.msgCodes.RETURN_LAST_RECEIVED)
+			newVal = self.talk(self.msgCodes.RETURN_LAST_RECEIVED)
 			if(len(newVal) == 3):
 				#print("---")
 				#print(newVal)
@@ -254,7 +257,7 @@ class HP3468A:
 				#fullStrDone = True
 				#print("len(newVal) != 3 ({}, len({}))".format(newVal, len(newVal)))
 
-		self.rawTalk(self.msgCodes.RETURN_LAST_RECEIVED)
+		self.talk(self.msgCodes.RETURN_LAST_RECEIVED)
 		return float(value)
 
 	#600ms per reading 5 digits
@@ -274,12 +277,12 @@ class HP3468A:
 		self.talk(self.msgCodes.TAD, 22)
 		self.talk(self.msgCodes.RFC)
 
-		newVal = self.rawTalk(self.msgCodes.SDA)
+		newVal = self.talk(self.msgCodes.SDA)
 		value = []
 		value.append(newVal[1])
 		for i in range(0, 4):
 			print(i)
-			newVal = self.rawTalk(self.msgCodes.RETURN_LAST_RECEIVED)
+			newVal = self.talk(self.msgCodes.RETURN_LAST_RECEIVED)
 			print(newVal)
 			value.append(newVal[1])
 
