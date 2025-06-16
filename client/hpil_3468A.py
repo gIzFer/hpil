@@ -324,6 +324,39 @@ class HP3468A:
 		self.adc_dac_value = statusBytes[4]
 
 
+	def getCal(self):
+		print("takes ~70s")
+		self.talk(self.msgCodes.IFC)
+		self.talk(self.msgCodes.REN)
+		self.talk(self.msgCodes.LAD, 22)
+		self.talk(self.msgCodes.DAB, ord('B'))
+		self.talk(self.msgCodes.END, ord('2'))
+		self.talk(self.msgCodes.UNL)
+		self.talk(self.msgCodes.TAD, 22)
+		self.talk(self.msgCodes.RFC)
+
+		newVal = self.talk(self.msgCodes.SDA)
+		value = []
+		value.append(newVal[1])
+		for i in range(0, 256):
+			print("{}...".format(i), end='', flush=True)
+			newVal = self.talk(self.msgCodes.RETURN_LAST_RECEIVED)
+			if(len(newVal) > 0):
+				value.append(newVal[1])
+			else:
+				print("empty val")
+
+		self.talk(self.msgCodes.NRE)
+		self.talk(self.msgCodes.UNT)
+		self.talk(self.msgCodes.IFC)
+		statusBytes = bytearray(value)
+
+		for i in range(1, 257):
+			print(hex(statusBytes[i - 1] - 64)[2:], end='')
+			if (i % 8 == 0):
+				print(" ", end='')
+			if (i % 16 == 0):
+				print()
 
 	def printStatusByte1(self):
 		print("Function: {}".format(self.function.name))
