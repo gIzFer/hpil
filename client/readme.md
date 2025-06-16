@@ -13,6 +13,7 @@ Example on how to interact with the firmware. I made it to mainly use it with th
  - [setFunction](#setFunction)
  - [readSingleValue](#readSingleValue)
  - [getStatus](#getStatus)
+ - [getCal](#getCal)
  - [printStatus](#printStatus)
  - [triggerReading](#triggerReading)
 
@@ -108,6 +109,14 @@ Since range depends on option parameters values are combined here:
 **method**: `getStatus()`
 
 **params**: none, returns nothing, use `printStatus()` to get reply
+
+### getCal
+
+**desc**: gets the meter's raw cal data
+
+**method**: `getCal()`
+
+**params**: none, simply prints the cal data
 
 ### printStatus
 
