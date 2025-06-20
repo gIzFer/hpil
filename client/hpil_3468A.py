@@ -22,7 +22,7 @@ class HP3468A:
 	("AAD", auto()), ("NAA", auto()), ("IAA", auto()),\
 	("AEP", auto()), ("IEP", auto()),\
 	("ZES", auto()), ("AES", auto()), ("NES", auto()), ("IES", auto()),\
-	("AMP", auto()), ("NMP", auto()), ("IMP", auto()), ("RETURN_LAST_RECEIVED", 101)])
+	("AMP", auto()), ("NMP", auto()), ("IMP", auto()), ("RETURN_LAST_RECEIVED", 101), ("GET_CAL_DATA", 102), ("GET_FIRMWARE_VERSION", 103)])
 
 	ser = None
 	ifcMaxTries = 10
@@ -53,7 +53,23 @@ class HP3468A:
 	error_calibrationRam = None
 	#byte 5
 	adc_dac_value = None
-
+	#calibration data
+	rawCalString = None
+	calDataRanges = [
+		"DC_0V3",
+		"DC_3V",
+		"DC_30V",
+		"DC_300V",
+		"AC_V",
+		"R_300",
+		"R_3k",
+		"R_30k",
+		"R_300k",
+		"R_3M",
+		"R_30M",
+		"I_3A"
+	]
+	calData = {}
 
 
 	class displayModes(Enum):
@@ -76,20 +92,23 @@ class HP3468A:
 
 
 	def __init__(self, usb_id):
-		self.ser = serial.Serial("/dev/ttyUSB" + str(usb_id), 115200, timeout=1)
-		print(self.ser.isOpen())
-		#print(self.ser.readline())
-		time.sleep(1)
-		if(len(self.ser.readline()) > 0): #device prints (idk why lol - to check firmware) trash as it resets from opening the connection
-			print("device ok")
-		#	pass
-		#else:
-		#	raise Exception('device not ok')
-		self.init()
 
-	def init(self):
-		#self.talk(self.msgCodes.SDC)
-		#time.sleep(0.5)
+		self.ser = serial.Serial("/dev/ttyUSB" + str(usb_id), 115200, timeout=1)
+		if(self.ser.isOpen()):
+			print("device opened")
+		else:
+			raise Exception('device not opened')
+		time.sleep(2)
+		readIn = str(self.ser.read(self.ser.in_waiting))
+		print(readIn)
+		if(readIn.find("ready") != -1):
+			print("device ready")
+		else:
+			raise Exception('device not ready')
+
+		self.initMeter()
+
+	def initMeter(self):
 		triesCount = 0
 		success = False
 		while(triesCount < self.ifcMaxTries and success == False):
@@ -102,6 +121,7 @@ class HP3468A:
 		if(success == False):
 			raise Exception('No answer. Tried {} times with between try delay of {}s'.format(self.ifcMaxTries, self.ifcTryDelay))
 
+		self.rawTalk(self.msgCodes.RFC)
 		self.rawTalk(self.msgCodes.RFC)
 		if(len(self.ser.readline()) == 0):
 			raise Exception("RFC FAILED")
@@ -117,12 +137,18 @@ class HP3468A:
 	#doesnt read answer back, exists to implement retry system in init
 	def rawTalk(self, command, data=0):
 		if not isinstance(command, self.msgCodes):
-			raise Exception('talk() invalid command (valid: self.msgCodes: {})'.format(list(multimeter.msgCodes.__members__)))
+			raise Exception('talk() invalid command (valid: self.msgCodes: {})'.format(list(self.msgCodes.__members__)))
 		#print("sending cmd {}, data: {} ({})".format(command.value, data, chr(data)))
 		self.ser.write([command.value, data, 10])
-		time.sleep(0.05)
+		#time.sleep(0.05)
 
 	def talk(self, command, data=0): #rawTalk but with read answer
+		self.ser.reset_input_buffer()
+		if(command != self.msgCodes.DAB and command != self.msgCodes.END and command != self.msgCodes.RETURN_LAST_RECEIVED):
+			self.rawTalk(self.msgCodes.RFC)
+			rfcRead = self.ser.readline()
+			print("rfcRead: {}".format(rfcRead))
+
 		self.rawTalk(command, data)
 		response = self.ser.readline()
 		return bytearray(response)
@@ -275,7 +301,7 @@ class HP3468A:
 		self.talk(self.msgCodes.END, ord('1'))
 		self.talk(self.msgCodes.UNL)
 		self.talk(self.msgCodes.TAD, 22)
-		self.talk(self.msgCodes.RFC)
+		#self.talk(self.msgCodes.RFC)
 
 		newVal = self.talk(self.msgCodes.SDA)
 		value = []
@@ -323,41 +349,6 @@ class HP3468A:
 		self.error_calibrationRam = bool(statusBytes[3] & 0b1)
 		self.adc_dac_value = statusBytes[4]
 
-
-	def getCal(self):
-		print("takes ~70s")
-		self.talk(self.msgCodes.IFC)
-		self.talk(self.msgCodes.REN)
-		self.talk(self.msgCodes.LAD, 22)
-		self.talk(self.msgCodes.DAB, ord('B'))
-		self.talk(self.msgCodes.END, ord('2'))
-		self.talk(self.msgCodes.UNL)
-		self.talk(self.msgCodes.TAD, 22)
-		self.talk(self.msgCodes.RFC)
-
-		newVal = self.talk(self.msgCodes.SDA)
-		value = []
-		value.append(newVal[1])
-		for i in range(0, 256):
-			print("{}...".format(i), end='', flush=True)
-			newVal = self.talk(self.msgCodes.RETURN_LAST_RECEIVED)
-			if(len(newVal) > 0):
-				value.append(newVal[1])
-			else:
-				print("empty val")
-
-		self.talk(self.msgCodes.NRE)
-		self.talk(self.msgCodes.UNT)
-		self.talk(self.msgCodes.IFC)
-		statusBytes = bytearray(value)
-
-		for i in range(1, 257):
-			print(hex(statusBytes[i - 1] - 64)[2:], end='')
-			if (i % 8 == 0):
-				print(" ", end='')
-			if (i % 16 == 0):
-				print()
-
 	def printStatusByte1(self):
 		print("Function: {}".format(self.function.name))
 		print("Range: {}".format(self.range))
@@ -394,6 +385,42 @@ class HP3468A:
 		self.printStatusByte3()
 		self.printStatusByte4()
 		self.printStatusByte5()
+
+
+	#https://web.archive.org/web/20240920172540/https://hpmuseum.org/forum/thread-8061-page-2.html
+	def getCal(self):
+		self.rawCalString = []
+		self.ser.reset_input_buffer()
+		self.rawTalk(self.msgCodes.GET_CAL_DATA)
+
+		for i in range(0, 15):
+			time.sleep(0.5)
+			#print(".", end='', flush=True)
+			if(self.ser.in_waiting > 1):
+				break
+		#print()
+		for i in range(0, 17):
+			self.rawCalString.append(self.ser.readline().decode('cp437'))
+
+		#print(self.rawCalString, end='', flush=True)
+
+		#parse cal
+		for i in range(2, 14):
+			line = self.rawCalString[i]
+			#print(line)
+			line = line.split(":")[1].split(" ")
+			line = list(filter(None, line))
+			#print(line)
+			calPair = {}
+			calPair["offset"] = int(line[-2])
+			calPair["gain"] = float(line[-1])
+			self.calData[self.calDataRanges[i-2]] = calPair
+
+	def printCal(self):
+		print("Range\t:\toffset\tgain")
+		for name,value in self.calData.items():
+			print("{}\t:\t{}\t{}".format(name, value["offset"], value["gain"]))
+
 
 	def triggerReading(self):
 		self.talk(self.msgCodes.GET)
