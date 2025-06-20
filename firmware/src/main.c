@@ -20,6 +20,7 @@
 #include "decoder.h"
 #include "talker.h"
 #include "hpil.h"
+#include "version.h"
 
 #ifdef DEBUG_PIN
 	#define LED PORTB4 //pin 12 for debugging
@@ -35,7 +36,8 @@ int main(void) {
 
 	setupInterrupts();
 
-	sendStr("hp-il_translator");
+	sendStr(VERSION);
+	sendStr("\nready\n");
 	for(;;) {
 		if((PIND & 0b1100)){//if any of the input pins read a high
 			sample();

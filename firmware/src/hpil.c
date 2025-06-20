@@ -106,6 +106,9 @@ void hpil_handle(){
 					}
 				}
 			}
+		}else if(uart_command[0] == 103){//get version
+			sendStr(VERSION);
+			sendByte('\n');
 		}else{
 			messageToSend = messages[(uint8_t) uart_command[0]];
 			messageToSend.frameData |= uart_command[1] & messages[(uint8_t) uart_command[0]].paramBits;

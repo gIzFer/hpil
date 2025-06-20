@@ -21,6 +21,9 @@ PFLAGS=-c arduino -p atmega328p
 U=1
 USB=/dev/ttyUSB$(U)
 
+#version file
+VERSION_FILE=src/version.h
+DATE=date +%F
 
 #avr-gcc -mmcu=atmega328p -Wall -Os -I src/ -c -o main.o src/main.c
 #avr-gcc -mmcu=atmega328p -Wall -Os -I src/ -c -o interrupts.o src/interrupts.c
@@ -63,3 +66,5 @@ prepare:
 	else \
 		echo ">build folder exists"; \
 	fi
+	VERSION_NUMBER=$$(cat src/version.h | awk -F[\<,\>] '{print $$2+1}'); \
+	echo "#define VERSION \"hp-il_translator build #$$VERSION_NUMBER ($$($(DATE)))\"	//<$$VERSION_NUMBER>" > $(VERSION_FILE); \

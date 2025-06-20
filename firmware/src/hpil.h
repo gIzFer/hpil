@@ -8,7 +8,7 @@
 #include "decoder.h"
 #include "talker.h"
 #include "messages.h"
-
+#include "version.h"
 
 struct sentCommandState{
 	struct command commandSent;
