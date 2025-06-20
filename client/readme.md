@@ -13,8 +13,9 @@ Example on how to interact with the firmware. I made it to mainly use it with th
  - [setFunction](#setFunction)
  - [readSingleValue](#readSingleValue)
  - [getStatus](#getStatus)
- - [getCal](#getCal)
  - [printStatus](#printStatus)
+ - [getCal](#getCal)
+ - [printCal](#printCal)
  - [triggerReading](#triggerReading)
 
  ----
@@ -108,15 +109,7 @@ Since range depends on option parameters values are combined here:
 
 **method**: `getStatus()`
 
-**params**: none, returns nothing, use `printStatus()` to get reply
-
-### getCal
-
-**desc**: gets the meter's raw cal data
-
-**method**: `getCal()`
-
-**params**: none, simply prints the cal data
+**params**: none, returns nothing, use [`printStatus()`](#printStatus) to get reply
 
 ### printStatus
 
@@ -124,7 +117,25 @@ Since range depends on option parameters values are combined here:
 
 **method**: `printStatus():`
 
-**params**: none, simply prints data gotten by `getStatus():`
+**params**: none, simply prints data gotten by [`getStatus()`](#getStatus)
+
+### getCal
+
+**desc**: gets the meter's raw cal data
+
+**method**: `getCal()`
+
+**params**: none, returns nothing, use [`printCal()`](#printCal) to get the processed calibration data
+
+### printCal
+
+**desc**: prints response to [`getCal()`](#getCal). Meter stores pairs of offset and gain per range in DCV and OHMS. ACV and current stores only one pair each. (List of ranges with calibration pairs: `DC_0V3`, `DC_3V`, `DC_30V`, `DC_300V`, `AC_V`, `R_300`, `R_3k`, `R_30k`, `R_300k`, `R_3M`, `R_30M`, `I_3A`)
+
+Sources: [HP Journal Issue Feb 1982 (volume 34)](https://archive.org/details/Hewlett-Packard_Journal_Vol._34_No._2_1983-02_Hewlett-Packard/page/n11/mode/2up) & [HP Museum thread "3421A CAL RAM"](https://www.hpmuseum.org/forum/thread-8061-page-2.html) | [Archived](https://web.archive.org/web/20240920172540/https://hpmuseum.org/forum/thread-8061-page-2.html)
+
+**method**: `printCal()`
+
+**params**: none, simply prints the cal data gotten by [`getCal()`](#getCal)
 
 ### triggerReading
 
@@ -132,4 +143,4 @@ Since range depends on option parameters values are combined here:
 
 **method**: `triggerReading():`
 
-**params**: none, simply triggers a reading, use `readSingleValue()` to get readen value
+**params**: none, simply triggers a reading, use [`readSingleValue()`](#readSingleValue) to get readen value
