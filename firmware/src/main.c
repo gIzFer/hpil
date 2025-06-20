@@ -38,8 +38,9 @@ int main(void) {
 	for(;;) {
 		if((PIND & 0b1100)){//if any of the input pins read a high
 			sample();
-			decodeFrame();
+			decodeFrame(true);
 		}
+		if(uart_commandParsed == false) //needed as the time to go into the function is too much
 		hpil_handle();
 	}
 }

@@ -5,7 +5,7 @@ OUT=build/main.elf
 
 #compiler
 CC=avr-gcc
-CFLAGS=-mmcu=atmega328p -Ofast -Werror -Wall -Wextra -funroll-loops -fvariable-expansion-in-unroller --param=min-pagesize=0 -ffunction-sections -fdata-sections -Wl,--gc-sections,--print-gc-sections
+CFLAGS=-mmcu=atmega328p -Ofast -Werror -Wall -Wextra -funroll-loops -fvariable-expansion-in-unroller --param=min-pagesize=0 -ffunction-sections -fdata-sections -Wl,-u,vfprintf,-lprintf_flt,-lm,--gc-sections,--print-gc-sections
 
 
 SRC_FOLDER=src

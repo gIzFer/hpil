@@ -78,7 +78,7 @@ void addBitToFrame(uint8_t framePair_[], uint8_t position){
 }
 
 
-void decodeFrame(){
+void decodeFrame(bool printResponse){
 	PINB |= 0b00010000;
 	cli();
 
@@ -184,9 +184,11 @@ void decodeFrame(){
 		}
 
 		//sendByte('r');
-		sendByte(frameControl);
-		sendByte(frameData);
-		sendByte('\n');
+		if(printResponse){
+			sendByte(frameControl);
+			sendByte(frameData);
+			sendByte('\n');
+		}
 
 
 		PINB |= 0b00010000;
