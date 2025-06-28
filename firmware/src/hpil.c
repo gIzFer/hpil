@@ -1,6 +1,12 @@
 #include "hpil.h"
 
 struct command messageToSend;
+static char *range[] = {
+"DC_0V3 ", "DC_3V  ", "DC_30V ", "DC_300V",
+"AC_V   ",
+"R_300  ", "R_3k   ", "R_30k  ", "R_300k ", "R_3M   ", "R_30M  ",
+"I_3    "};
+struct calPair calData[RANGES_COUNT];
 
 #include <util/delay.h>
 #define F_CPU 16000000UL
@@ -19,13 +25,6 @@ void quickCall(uint8_t a, uint8_t b){
 	decodeFrame(false);
 }
 
-char getHex(uint8_t num){
-	if(num < 10){
-		return num + 48;
-	}else{
-		return num + 55;
-	}
-}
 void hpil_handle(){
 
 	//commandParsed is set from uart
@@ -60,55 +59,71 @@ void hpil_handle(){
 				quickCall(frameControl, frameData);
 				inData[i]=frameData;
 			}
+			quickCall(32,0);
+			quickCall(27,0);
+			quickCall(32,0);
+			quickCall(18,0);
 
 			//the following code is adapted from https://www.hpmuseum.org/forum/thread-8061-page-2.html
 			//archive: https://web.archive.org/web/20240920172540/https://hpmuseum.org/forum/thread-8061-page-2.html
-			static char *range[] = {
-			"",
-			"0.3V", "3V  ", "30V ", "300V",
-			"ACV ",
-			"300R", "3k  ", "30k ", "300k", "3M  ", "30M ",
-			"3A  ",
-			"    ", "    ", "    " };
-			sendStr("RRRR: YYYYYYY GGGGG SSSS  YYYYYYY GGGGG\n      ");
+			sendStr("RAW CAL STRING: ");
 			for (int i = 0; i < 256; i++) {
+				sendByte(inData[i]);
+			}
+			sendByte('\n');
+			sendStr("RRRRRRR: YYYYYYY GGGGG SSSS  ->   YYYYYYY GGGGGGGG\n");
+			uint8_t currentRange = 0;
+			for (int i = 16; i < (256-(16*3)); i++) {
+				if (i % 16 == 0){
+					currentRange = ((i+1)/16)-1;
+					sendStr(range[currentRange]);
+					sendByte(':');
+					sendByte(' ');
+				}
+
+
 				inData[i] -= 64;
 				sendByte(getHex(inData[i]));
-
 				if (i % 16 == 6) sendByte(' ');
 				if (i % 16 == 11) sendByte(' ');
 
 				if ((i % 16 == 15)){
-					uint8_t o = 0;
-					sendByte(' ');
-					if ((inData[i-15]) > 3) o = 9;
+					signed char o = 0;
+					if ((inData[i-15]) > 3) o  = 9;
+
+
+					sendStr("  ->  ");
 					sendByte(o ? '-' : ' ');
 					for (uint8_t j=0; j<7; j++){
-						sendByte((o ? getHex(o-(inData[i-15 + j])) : getHex(inData[i-15 + j]) ));
+						uint8_t num = o ? o-(inData[i-15 + j]) : inData[i-15 + j];
+						calData[currentRange].offset += num * (pow(10, 7-j));
+
+						sendByte(getHex(num));
 					}
+
+					calData[currentRange].gain = getgain(inData + i - 15 + 7);
+					char output[10];
+					//sprintf(output, "%ld", calData[currentRange].offset);
+					//sendStr(output);
 					sendByte(' ');
-					float f = 1.0;
-					float s = 100.0;
-					for (uint8_t j=7; j<12; j++) {
-						o = inData[i-15 + j];
-						o = o > 7 ? o - 16 : o;
-						f += ((float) o ) / s;
-						s *= 10;
-					}
-					char output[12];
-					sprintf(output, "%1.8f", f);
+					sprintf(output, "%1.6f", calData[currentRange].gain);
 					sendStr(output);
-					sendByte('\n');
-					if(i != 255){
-						sendStr(range[(i+1)/16]);
-						sendByte(':');
-						sendByte(' ');
+
+					uint8_t gainStr [5];
+					encode_gain(gainStr, calData[currentRange].gain);
+					sendByte(' ');
+					for (uint8_t j=0; j<5; j++) {
+						sendByte(getHex(gainStr[j]));
 					}
+					sendByte('\n');
+
 				}
 			}
 		}else if(uart_command[0] == 103){//get version
 			sendStr(VERSION);
 			sendByte('\n');
+		}else if(uart_command[0] == 104){//set cal
+			//there are 24 values. 12 ranges and 2 per range.
 		}else{
 			messageToSend = messages[(uint8_t) uart_command[0]];
 			messageToSend.frameData |= uart_command[1] & messages[(uint8_t) uart_command[0]].paramBits;

@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define UART_BUFFER_SIZE 4
+#define UART_BUFFER_SIZE 16
 #define LINE_TERMINATOR '\n'
 
 //when we receive a command from serial its stored here and its marked as unparsed

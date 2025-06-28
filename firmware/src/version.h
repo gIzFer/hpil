@@ -1,1 +1,1 @@
-#define VERSION "hp-il_translator build #7 (2025-06-20)"	//<7>
+#define VERSION "hp-il_translator build #62 (2025-06-28)"	//<62>
