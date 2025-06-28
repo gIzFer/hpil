@@ -21,7 +21,7 @@ They are for extra messages you can send to the device, like asking it to just s
 
 #### 1XX List of codes
 - 101: send back the last message received
-- 102: get calibration data
+- 102: get calibration data of the HP3468 dmm
 - 103: get firmware version
 
 ### 2XX
