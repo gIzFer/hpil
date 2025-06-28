@@ -15,4 +15,8 @@ char getHex(uint8_t num);
 double getgain(const uint8_t *gstr);
 //void adjusticate(int *digits, bool add, unsigned pos);
 //void encode_gain(uint8_t *gstr, double gain);
-void encode_gain(uint8_t *gstr, double gain);
+void encode_gain(uint8_t *gainString, double gain);
+
+bool getByteParity(uint8_t byte_);
+
+void getParity(uint8_t *parityString, uint8_t *dataString);

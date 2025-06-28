@@ -11,7 +11,8 @@ struct calPair calData[RANGES_COUNT];
 #include <util/delay.h>
 #define F_CPU 16000000UL
 
-
+//#define DEBUG_ENCODE_GAIN
+//#define DEBUG_PARITY
 
 
 void quickCall(uint8_t a, uint8_t b){
@@ -109,14 +110,28 @@ void hpil_handle(){
 					sprintf(output, "%1.6f", calData[currentRange].gain);
 					sendStr(output);
 
-					uint8_t gainStr [5];
-					encode_gain(gainStr, calData[currentRange].gain);
-					sendByte(' ');
-					for (uint8_t j=0; j<5; j++) {
-						sendByte(getHex(gainStr[j]));
-					}
-					sendByte('\n');
+					#ifdef DEBUG_ENCODE_GAIN
+						uint8_t gainStr[5];
+						encode_gain(gainStr, calData[currentRange].gain);
 
+						sendByte(' ');
+						for (uint8_t j=0; j<5; j++) {
+							sendByte(getHex(gainStr[j]));
+						}
+					#endif
+
+					#ifdef DEBUG_PARITY
+						uint8_t parityString[4];
+						getParity(parityString, inData + i - 15);
+
+						sendByte(' ');
+						sendByte(getHex(parityString[0]));
+						sendByte(getHex(parityString[1]));
+						sendByte(getHex(parityString[2]));
+						sendByte(getHex(parityString[3]));
+					#endif
+
+					sendByte('\n');
 				}
 			}
 		}else if(uart_command[0] == 103){//get version
