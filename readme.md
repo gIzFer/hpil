@@ -25,6 +25,7 @@ They are for extra messages you can send to the device, like asking it to just s
 - 103: get firmware version
 - 104: set calibration value of the HP3468 dmm. Has 5 parameters: first one is the range setting to set. Since there are 12 ranges and two values per range the even values are offsets and odd values are gains. i.e.: `104 6 0 0 0 0` set the offset of the fourth range to 0.i.e.: `104 1 0 0 0 0` set the gain of the first range to 0.
 - 105: print processed calibration values of the HP3468 dmm
+- 106: print a quick read of the HP3468 dmm
 
 ### 2XX
 

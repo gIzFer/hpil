@@ -114,31 +114,33 @@ void hpil_handle(){
 		}else if(uart_command[0] == 102){//get cal data
 			uint8_t inData[256];
 			memset(inData, 0, 256);
-			quickCall(32,0);
-			quickCall(16,0);
-			quickCall(32,0);
-			quickCall(17,0);
-			quickCall(32,0);
-			quickCall(21,22);
-			quickCall(32,0);
-			quickCall(0,66);
-			//quickCall(32,0);
-			quickCall(1,50);
-			quickCall(32,0);
-			quickCall(23,0);
-			quickCall(32,0);
-			quickCall(24,22);
-			quickCall(32,0);
-			quickCall(36,0);
+			quickCall(RFC.id,0);
+			quickCall(IFC.id,0);
+			quickCall(RFC.id,0);
+			quickCall(REN.id,0);
+			quickCall(RFC.id,0);
+			quickCall(LAD.id,22);
+			quickCall(RFC.id,0);
+			quickCall(DAB.id,66);
+			//quickCall(RFC.id,0);
+			quickCall(END.id,50);
+			quickCall(RFC.id,0);
+			quickCall(UNL.id,0);
+			quickCall(RFC.id,0);
+			quickCall(TAD.id,22);
+			quickCall(RFC.id,0);
+			quickCall(SDA.id,0);
 			inData[0] = frameData;
 			for (int i = 1; i < 256; i++) {
 				quickCall(frameControl, frameData);
 				inData[i]=frameData;
 			}
-			quickCall(32,0);
-			quickCall(27,0);
-			quickCall(32,0);
-			quickCall(18,0);
+			quickCall(RFC.id,0);
+			quickCall(UNT.id,0);
+			quickCall(RFC.id,0);
+			quickCall(NRE.id,0);
+			quickCall(RFC.id, 0);
+			quickCall(DCL.id, 0);
 
 			//the following code is adapted from https://www.hpmuseum.org/forum/thread-8061-page-2.html
 			//archive: https://web.archive.org/web/20240920172540/https://hpmuseum.org/forum/thread-8061-page-2.html
@@ -208,6 +210,31 @@ void hpil_handle(){
 			}
 		}else if(uart_command[0] == 105){//print loaded cal data
 			printCalData();
+		}else if(uart_command[0] == 106){//quick reading
+			quickCall(RFC.id, 0);
+			quickCall(IFC.id, 0);
+			quickCall(RFC.id, 0);
+			quickCall(REN.id, 0);
+			quickCall(RFC.id, 0);
+			quickCall(TAD.id, 22);
+			quickCall(RFC.id, 0);
+			quickCall(SDA.id, 0);
+			sendByte(frameData);
+			bool donePrinting = false;
+			for (int i = 0; i < 16; i++) {
+				if(frameData == 10) break;
+				quickCall(frameControl, frameData);
+				if(frameData == 13) donePrinting = true;
+				if(!donePrinting) sendByte(frameData);
+			}
+			sendByte('\n');
+			quickCall(RFC.id, 0);
+			quickCall(UNT.id, 0);
+			quickCall(RFC.id, 0);
+			quickCall(NRE.id, 0);
+			quickCall(RFC.id, 0);
+			quickCall(DCL.id, 0);
+
 		}else{
 			messageToSend = messages[(uint8_t) uart_command[0]];
 			messageToSend.frameData |= uart_command[1] & messages[(uint8_t) uart_command[0]].paramBits;
