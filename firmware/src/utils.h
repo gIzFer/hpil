@@ -12,6 +12,7 @@
 #define MIN_GAIN ((double) 0.911112)
 
 char getHex(uint8_t num);
+uint8_t getNDigit(double gain, uint8_t digitNumber);
 double getgain(const uint8_t *gstr);
 //void adjusticate(int *digits, bool add, unsigned pos);
 //void encode_gain(uint8_t *gstr, double gain);

@@ -47,6 +47,6 @@ enum range {
 
 
 struct calPair {
-	uint32_t offset;
+	int32_t offset;
 	double gain;
 };
