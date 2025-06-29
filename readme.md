@@ -23,6 +23,8 @@ They are for extra messages you can send to the device, like asking it to just s
 - 101: send back the last message received
 - 102: get calibration data of the HP3468 dmm
 - 103: get firmware version
+- 104: set calibration value of the HP3468 dmm. Has 5 parameters: first one is the range setting to set. Since there are 12 ranges and two values per range the even values are offsets and odd values are gains. i.e.: `104 6 0 0 0 0` set the offset of the fourth range to 0.i.e.: `104 1 0 0 0 0` set the gain of the first range to 0.
+- 105: print processed calibration values of the HP3468 dmm
 
 ### 2XX
 
@@ -30,6 +32,7 @@ They are for extra messages you can receive from the device  like errors
 
 #### 2XX List of codes
 - 201: received message buffer overflowed, answers with 201 and the last byte it received
+- 202: in command 104, trying to set a cal value the value was more than 23; there are only 12 ranges with 2 values per range (offset and gain), 0 to 23.
 
 
 
