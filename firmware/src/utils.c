@@ -8,15 +8,6 @@ char getHex(uint8_t num){
 	}
 }
 
-uint8_t getNDigit(double gain, uint8_t digitNumber){
-	long kf_int = round(gain*1.0E6);
-	if(gain>1){
-		kf_int -= 1E6;
-	}
-	return (long)kf_int/(long)(pow(10,digitNumber-1))%10 ;
-}
-
-
 //from https://github.com/fenugrec/hp3478a_utils/blob/master/hp3478util.c
 double getgain(const uint8_t *gainString) {
 	double gain = 1.0;
@@ -37,7 +28,24 @@ double getgain(const uint8_t *gainString) {
 	return gain;
 }
 
+uint8_t getNDigit(double gain, uint8_t digitNumber){
+	long kf_int = round(gain*1.0E6);
+	if(gain>1){
+		kf_int -= 1E6;
+	}
+	return (long)kf_int/(long)(pow(10,digitNumber-1))%10 ;
+}
+
+
 // based on https://www.eevblog.com/forum/repair/hp-3478a-how-to-readwrite-cal-sram/msg1966463/#msg1966463
+
+//gain is read right to left
+//if the first character is greater than 6 we add 6 to it and add one to the next value (addOneToNext=1). If not digit is set as is
+
+//on all the characters after:
+//first we add 1 from the previous character if needed
+//then, if its 10 we set the digit as 0 and add one to the next value
+//if the digit (after adding one) is more than 4 we add 6 and add one to the next value. If not digit is set as is
 void encode_gain(uint8_t *gainString, double gain){
 	uint8_t addOneToNext = 0;
 	for (int j=1; j<6; j++) {
@@ -63,8 +71,9 @@ void encode_gain(uint8_t *gainString, double gain){
 		gainString[5-j]=lastDigit;
 	}
 }
+
 bool getByteParity(uint8_t byte_){
-	bool parity = false;	// parity will be the parity of v
+	bool parity = false;
 	while (byte_){
 		if (byte_ & 0b1){
 			parity = !parity;
@@ -92,23 +101,28 @@ bool getByteParity(uint8_t byte_){
 */
 void getParity(uint8_t *parityString, uint8_t *dataString){
 
-		parityString[0] = (~(dataString[0]^dataString[1]^dataString[2]^dataString[3]^dataString[4]^dataString[5]))&0xF;
+	//odd parity of first column (nibble C)
+	parityString[0] = (~(dataString[0]^dataString[1]^dataString[2]^dataString[3]^dataString[4]^dataString[5]))&0xF;
 
-		parityString[1] = (~(dataString[6]^dataString[7]^dataString[8]^dataString[9]^dataString[10]^dataString[11]))&0xF;
+	//odd parity of second column (nibble D)
+	parityString[1] = (~(dataString[6]^dataString[7]^dataString[8]^dataString[9]^dataString[10]^dataString[11]))&0xF;
 
-		uint8_t rowsParity = 0;
-		for(uint8_t x = 0; x < 6; x++){
-				uint8_t row = (dataString[x]<<4)|dataString[x+6];
-				bool myParity = !getByteParity(row);
-				rowsParity <<=1;
-				rowsParity |= myParity;
-		}
+	//get the rows parity into a byte
+	uint8_t rowsParity = 0;
+	for(uint8_t x = 0; x < 6; x++){
+		uint8_t row = (dataString[x]<<4)|dataString[x+6];
+		bool myParity = !getByteParity(row);
+		rowsParity <<=1;
+		rowsParity |= myParity;
+	}
 
-		parityString[2] = rowsParity >> 2;
-		parityString[3] = (rowsParity & 0b11) << 2;
-		bool C_D_parity = !getByteParity((parityString[0]<<4)|parityString[1]);
-		bool E_F_parity = !getByteParity((parityString[2]<<4)|parityString[3]);
-		parityString[3] |= C_D_parity << 1 | E_F_parity;
+	//fill parity nibble E
+	parityString[2] = rowsParity >> 2;
+	//fill parity nibble F
+	parityString[3] = (rowsParity & 0b11) << 2;
+	bool C_D_parity = !getByteParity((parityString[0]<<4)|parityString[1]);
+	bool E_F_parity = !getByteParity((parityString[2]<<4)|parityString[3]);
+	parityString[3] |= C_D_parity << 1 | E_F_parity;
 }
 
 

@@ -12,12 +12,12 @@
 #define MIN_GAIN ((double) 0.911112)
 
 char getHex(uint8_t num);
-uint8_t getNDigit(double gain, uint8_t digitNumber);
+//sizes: gstr[5]
 double getgain(const uint8_t *gstr);
-//void adjusticate(int *digits, bool add, unsigned pos);
-//void encode_gain(uint8_t *gstr, double gain);
+uint8_t getNDigit(double gain, uint8_t digitNumber);
+//sizes: gainString[5]
 void encode_gain(uint8_t *gainString, double gain);
 
 bool getByteParity(uint8_t byte_);
-
+//sizes: parityString[4], dataString[12]
 void getParity(uint8_t *parityString, uint8_t *dataString);
