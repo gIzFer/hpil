@@ -12,8 +12,6 @@ uint8_t finalStr[256];
 #include <util/delay.h>
 #define F_CPU 16000000UL
 
-//#define DEBUG_ENCODE_GAIN
-//#define DEBUG_PARITY
 //#define DEBUG_FORMAT_RAW_STRINGS
 
 void quickCall(uint8_t a, uint8_t b){
